@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mystic Tower Defense</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f0f23);
+            color: #e8e8f0;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100vw;
+            height: 100vh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .main-menu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(ellipse at center, rgba(75, 0, 130, 0.3), rgba(25, 25, 112, 0.6), rgba(0, 0, 0, 0.9));
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .title {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            background: linear-gradient(45deg, #9d4edd, #c77dff, #e0aaff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 20px rgba(157, 78, 221, 0.5);
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes glow {
+            from { filter: drop-shadow(0 0 10px rgba(157, 78, 221, 0.5)); }
+            to { filter: drop-shadow(0 0 20px rgba(157, 78, 221, 0.8)); }
+        }
+
+        .menu-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .menu-btn {
+            padding: 1rem 2rem;
+            font-size: 1.2rem;
+            background: linear-gradient(45deg, #4a148c, #6a1b9a);
+            border: 2px solid #9c27b0;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .menu-btn:hover {
+            background: linear-gradient(45deg, #6a1b9a, #8e24aa);
+            box-shadow: 0 0 20px rgba(156, 39, 176, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .game-area {
+            display: none;
+            flex: 1;
+            position: relative;
+        }
+
+        .hud {
+            height: 80px;
+            background: linear-gradient(90deg, rgba(26, 26, 46, 0.9), rgba(22, 33, 62, 0.9));
+            border-bottom: 2px solid #9c27b0;
+            display: flex;
+            align-items: center;
+            padding: 0 20px;
+            gap: 30px;
+        }
+
+        .hud-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .hud-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gold { background: linear-gradient(45deg, #ffd700, #ffb347); color: #8b4513; }
+        .health { background: linear-gradient(45deg, #ff4757, #ff3838); color: white; }
+        .wave { background: linear-gradient(45deg, #5352ed, #3742fa); color: white; }
+
+        .main-game {
+            flex: 1;
+            display: flex;
+        }
+
+        .game-board {
+            flex: 1;
+            position: relative;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(75, 0, 130, 0.3) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(25, 25, 112, 0.3) 0%, transparent 50%),
+                linear-gradient(135deg, #1a1a2e, #16213e);
+            overflow: hidden;
+        }
+
+        .path {
+            position: absolute;
+            background: rgba(139, 69, 19, 0.6);
+            border: 2px solid rgba(160, 82, 45, 0.8);
+            border-radius: 10px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+        }
+
+        .tower-slot {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            border: 2px dashed rgba(156, 39, 176, 0.5);
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .tower-slot:hover {
+            border-color: rgba(156, 39, 176, 0.8);
+            background: rgba(156, 39, 176, 0.1);
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.3);
+        }
+
+        .tower {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            cursor: pointer;
+            position: relative;
+            animation: towerPlace 0.5s ease-out;
+        }
+
+        @keyframes towerPlace {
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .arrow-tower { 
+            background: linear-gradient(45deg, #8d6e63, #5d4037);
+            color: #ffcc02;
+            border: 2px solid #bf360c;
+        }
+
+        .magic-tower { 
+            background: linear-gradient(45deg, #3f51b5, #673ab7);
+            color: #e1bee7;
+            border: 2px solid #9c27b0;
+        }
+
+        .crossbow-tower {
+            background: linear-gradient(45deg, #616161, #424242);
+            color: #ffab91;
+            border: 2px solid #ff5722;
+        }
+
+        .fireball-tower { 
+            background: linear-gradient(45deg, #ff5722, #d84315);
+            color: #ffccbc;
+            border: 2px solid #ff7043;
+        }
+
+        .tower-upgrade-info {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: gold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            pointer-events: none;
+            white-space: nowrap;
+        }
+
+        .enemy {
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            z-index: 10;
+            transition: all 0.1s ease;
+        }
+
+        .goblin { background: linear-gradient(45deg, #4caf50, #388e3c); color: white; }
+        .orc { background: linear-gradient(45deg, #f44336, #d32f2f); color: white; }
+        .troll { background: linear-gradient(45deg, #795548, #5d4037); color: white; }
+        .dragon { background: linear-gradient(45deg, #9c27b0, #673ab7); color: white; }
+        .shadowBeast { background: linear-gradient(45deg, #424242, #212121); color: #ff5722; }
+        .demonLord { background: linear-gradient(45deg, #d32f2f, #b71c1c); color: white; }
+        .darkWizard { background: linear-gradient(45deg, #4a148c, #311b92); color: #e1bee7; }
+        .necromancer { background: linear-gradient(45deg, #37474f, #263238); color: #ffeb3b; }
+        .ancientDragon { background: linear-gradient(45deg, #1b5e20, #2e7d32); color: #ffeb3b; }
+        .voidLord { background: linear-gradient(45deg, #000000, #424242); color: #e91e63; }
+        /* NEW EPIC ENEMY STYLES */
+        .abysalKnight { background: linear-gradient(45deg, #1a237e, #000051); color: #64b5f6; }
+        .cosmicHorror { background: linear-gradient(45deg, #4a148c, #1a237e); color: #e1bee7; }
+        .shadowDragon { background: linear-gradient(45deg, #000000, #1b5e20); color: #76ff03; }
+        .voidWarden { background: linear-gradient(45deg, #263238, #37474f); color: #00e5ff; }
+        .chaosLord { background: linear-gradient(45deg, #b71c1c, #4a148c); color: #ffff00; }
+        .primordialBeast { background: linear-gradient(45deg, #e65100, #bf360c); color: #fff3e0; }
+        .voidEmperor { background: linear-gradient(45deg, #000000, #4a148c); color: #ffd700; }
+        .eldritchGod { background: linear-gradient(45deg, #1a237e, #000000); color: #e91e63; }
+        .realityBreaker { background: linear-gradient(45deg, #4a148c, #000000); color: #00ffff; }
+        .theVoidItself { background: linear-gradient(45deg, #000000, #000000); color: #ffffff; border: 2px solid #e91e63; }
+
+        .projectile {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .arrow-projectile {
+            position: absolute;
+            width: 12px;
+            height: 3px;
+            background: linear-gradient(90deg, #8d6e63, #d4af37);
+            border-radius: 0 50% 50% 0;
+            z-index: 5;
+            pointer-events: none;
+        }
+
+        .arrow-projectile::before {
+            content: '';
+            position: absolute;
+            left: -3px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid #8d6e63;
+            border-top: 3px solid transparent;
+            border-bottom: 3px solid transparent;
+        }
+
+        .fireball-projectile {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff9800, #ff5722, #d84315);
+            box-shadow: 0 0 15px #ff5722;
+            z-index: 5;
+            pointer-events: none;
+            animation: fireballGlow 0.3s ease-in-out infinite alternate;
+        }
+
+        @keyframes fireballGlow {
+            from { box-shadow: 0 0 15px #ff5722; }
+            to { box-shadow: 0 0 25px #ff9800; }
+        }
+
+        .magic-bolt { 
+            background: radial-gradient(circle, #e1bee7, #9c27b0);
+            box-shadow: 0 0 10px #9c27b0;
+        }
+        .crossbow-bolt { background: #616161; }
+
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, rgba(26, 26, 46, 0.95), rgba(22, 33, 62, 0.95));
+            border-left: 2px solid #9c27b0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .tower-shop {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .tower-buy-btn {
+            padding: 15px;
+            background: linear-gradient(45deg, #4a148c, #6a1b9a);
+            border: 2px solid #9c27b0;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .tower-buy-btn:hover {
+            background: linear-gradient(45deg, #6a1b9a, #8e24aa);
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .tower-buy-btn:disabled {
+            background: linear-gradient(45deg, #424242, #616161);
+            border-color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .power-ups {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .power-up-btn {
+            padding: 12px;
+            background: linear-gradient(45deg, #ff5722, #f4511e);
+            border: 2px solid #ff7043;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .power-up-btn:hover:not(:disabled) {
+            background: linear-gradient(45deg, #f4511e, #e64a19);
+            box-shadow: 0 0 15px rgba(255, 87, 34, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .power-up-btn:disabled {
+            background: linear-gradient(45deg, #666, #555);
+            border-color: #777;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .cooldown-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 8px;
+        }
+
+        .speed-control {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .speed-btn {
+            padding: 8px 12px;
+            background: linear-gradient(45deg, #795548, #5d4037);
+            border: 2px solid #8d6e63;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .speed-btn.active {
+            background: linear-gradient(45deg, #ff9800, #f57c00);
+            border-color: #ffb74d;
+            box-shadow: 0 0 10px rgba(255, 152, 0, 0.5);
+        }
+
+        .speed-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        .wave-start-btn {
+            padding: 15px 30px;
+            background: linear-gradient(45deg, #2e7d32, #388e3c);
+            border: 2px solid #4caf50;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            transition: all 0.3s ease;
+        }
+
+        .wave-start-btn:hover {
+            background: linear-gradient(45deg, #388e3c, #43a047);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .explosion {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff9800, #f57c00, transparent);
+            animation: explode 0.5s ease-out forwards;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        @keyframes explode {
+            0% { transform: scale(0); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
+
+        .damage-text {
+            position: absolute;
+            color: #ff5722;
+            font-weight: bold;
+            font-size: 1.2rem;
+            pointer-events: none;
+            z-index: 20;
+            animation: damageFloat 1s ease-out forwards;
+        }
+
+        @keyframes damageFloat {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-30px); opacity: 0; }
+        }
+
+        .level-complete, .game-over {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            text-align: center;
+        }
+
+        .modal-title {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            background: linear-gradient(45deg, #ffd700, #ffb347);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .modal-btn {
+            padding: 1rem 2rem;
+            margin: 0.5rem;
+            background: linear-gradient(45deg, #4a148c, #6a1b9a);
+            border: 2px solid #9c27b0;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn:hover {
+            background: linear-gradient(45deg, #6a1b9a, #8e24aa);
+            box-shadow: 0 0 15px rgba(156, 39, 176, 0.4);
+        }
+
+        .story-mode {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 2rem;
+        }
+
+        .story-text {
+            max-width: 600px;
+            text-align: center;
+            font-size: 1.3rem;
+            line-height: 1.6;
+            margin-bottom: 2rem;
+            color: #e0aaff;
+        }
+
+        .range-indicator {
+            position: absolute;
+            border: 2px solid rgba(156, 39, 176, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            background: rgba(156, 39, 176, 0.1);
+            animation: rangeGlow 1s ease-in-out infinite alternate;
+        }
+
+        @keyframes rangeGlow {
+            from { box-shadow: 0 0 10px rgba(156, 39, 176, 0.3); }
+            to { box-shadow: 0 0 20px rgba(156, 39, 176, 0.6); }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar { width: 200px; padding: 10px; }
+            .title { font-size: 2.5rem; }
+            .hud { height: 60px; font-size: 0.9rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- Main Menu -->
+        <div class="main-menu" id="mainMenu">
+            <h1 class="title">🧙‍♂️ MYSTIC TOWER DEFENSE</h1>
+            <div class="menu-buttons">
+                <button class="menu-btn" onclick="startStoryMode()">📖 Epic Story Mode (20 Levels!)</button>
+                <button class="menu-btn" onclick="startGame('single')">⚔️ Single Player</button>
+                <button class="menu-btn" onclick="startGame('multi')">👥 Multiplayer</button>
+                <button class="menu-btn" onclick="showInstructions()">📜 Instructions</button>
+            </div>
+        </div>
+
+        <!-- Story Mode -->
+        <div class="story-mode" id="storyMode">
+            <div class="story-text" id="storyText">
+                In the mystical realm of Aethermoor, dark forces have awakened. Ancient evils pour forth from the shadow realm, threatening to consume all light and magic. You are the last Arcane Guardian, wielding the power to summon defensive towers and cast mighty spells. The fate of the realm rests in your hands...
+            </div>
+            <button class="modal-btn" onclick="startStoryGame()">Begin the Quest →</button>
+        </div>
+
+        <!-- Game Area -->
+        <div class="game-area" id="gameArea">
+            <!-- HUD -->
+            <div class="hud">
+                <div class="hud-item">
+                    <div class="hud-icon gold">💰</div>
+                    <span>Gold: <span id="gold">100</span></span>
+                </div>
+                <div class="hud-item">
+                    <div class="hud-icon health">❤️</div>
+                    <span>Lives: <span id="lives">20</span></span>
+                </div>
+                <div class="hud-item">
+                    <div class="hud-icon wave">🌊</div>
+                    <span>Wave: <span id="currentWave">1</span></span>
+                </div>
+                <div class="hud-item">
+                    <span>Level: <span id="currentLevel">1</span></span>
+                </div>
+            </div>
+
+            <div class="main-game">
+                <!-- Game Board -->
+                <div class="game-board" id="gameBoard">
+                    <!-- Path and tower slots will be generated here -->
+                </div>
+
+                <!-- Sidebar -->
+                <div class="sidebar">
+                    <h3>🏗️ Tower Shop</h3>
+                    <div class="tower-shop">
+                        <button class="tower-buy-btn" onclick="selectTower('arrow')" data-cost="25">
+                            🏹 Arrow Tower<br><small>Cost: 25 Gold</small>
+                        </button>
+                        <button class="tower-buy-btn" onclick="selectTower('magic')" data-cost="40">
+                            🔮 Magic Tower<br><small>Cost: 40 Gold</small>
+                        </button>
+                        <button class="tower-buy-btn" onclick="selectTower('crossbow')" data-cost="60">
+                            🏹 Crossbow Tower<br><small>Cost: 60 Gold</small>
+                        </button>
+                        <button class="tower-buy-btn" onclick="selectTower('fireball')" data-cost="80">
+                            🔥 Fireball Tower<br><small>Cost: 80 Gold</small>
+                        </button>
+                    </div>
+
+                    <h3>⚡ Power-Ups</h3>
+                    <div class="power-ups">
+                        <button class="power-up-btn" id="fireballBtn" onclick="usePowerUp('fireball')">
+                            <div>🔥 Fireball</div>
+                            <div class="cooldown-overlay" id="fireballCooldown" style="display: none;">
+                                <span id="fireballTime">0</span>
+                            </div>
+                        </button>
+                        <button class="power-up-btn" id="magicStrikeBtn" onclick="usePowerUp('magicStrike')">
+                            <div>⚡ Magic Strike</div>
+                            <div class="cooldown-overlay" id="magicStrikeCooldown" style="display: none;">
+                                <span id="magicStrikeTime">0</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <div class="speed-control">
+                        <span>Speed:</span>
+                        <button class="speed-btn active" id="speed1x" onclick="setGameSpeed(1)">1x</button>
+                        <button class="speed-btn" id="speed2x" onclick="setGameSpeed(2)">2x</button>
+                    </div>
+
+                    <button class="wave-start-btn" id="startWaveBtn" onclick="startWave()">
+                        🚀 Start Wave
+                    </button>
+
+                    <div style="margin-top: 20px;">
+                        <button class="modal-btn" onclick="returnToMenu()">🏠 Main Menu</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Level Complete Modal -->
+        <div class="level-complete" id="levelComplete">
+            <h2 class="modal-title">🎉 Level Complete!</h2>
+            <p id="levelCompleteText">Excellent work, Guardian!</p>
+            <div>
+                <button class="modal-btn" onclick="nextLevel()">Next Level →</button>
+                <button class="modal-btn" onclick="returnToMenu()">Main Menu</button>
+            </div>
+        </div>
+
+        <!-- Game Over Modal -->
+        <div class="game-over" id="gameOver">
+            <h2 class="modal-title">💀 Game Over</h2>
+            <p id="gameOverText">The darkness has consumed the realm...</p>
+            <div>
+                <button class="modal-btn" onclick="restartLevel()">Try Again</button>
+                <button class="modal-btn" onclick="returnToMenu()">Main Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let gameState = {
+            gold: 100,
+            lives: 20,
+            currentWave: 1,
+            currentLevel: 1,
+            selectedTower: null,
+            towers: [],
+            enemies: [],
+            projectiles: [],
+            gameMode: 'single',
+            isPaused: false,
+            waveInProgress: false,
+            gameSpeed: 1,
+            powerUps: {
+                fireball: { cooldown: 0, maxCooldown: 15000 },
+                magicStrike: { cooldown: 0, maxCooldown: 20000 }
+            }
+        };
+
+        // Tower Types
+        const towerTypes = {
+            arrow: { cost: 25, damage: 15, range: 100, speed: 1000, symbol: '🏹', upgradeCost: 20, projectileType: 'arrow' },
+            magic: { cost: 40, damage: 25, range: 120, speed: 800, symbol: '🔮', upgradeCost: 35, projectileType: 'magic-bolt' },
+            crossbow: { cost: 60, damage: 40, range: 80, speed: 1200, symbol: '🏹', upgradeCost: 50, projectileType: 'crossbow-bolt' },
+            fireball: { cost: 80, damage: 60, range: 90, speed: 1500, symbol: '🔥', upgradeCost: 70, projectileType: 'fireball', areaRadius: 40 }
+        };
+
+        // Enemy Types (Now 15 different enemies!)
+        const enemyTypes = {
+            goblin: { hp: 30, speed: 1.5, reward: 5, symbol: '👹' },
+            orc: { hp: 60, speed: 1.2, reward: 8, symbol: '👺' },
+            troll: { hp: 120, speed: 0.8, reward: 15, symbol: '🧌' },
+            dragon: { hp: 200, speed: 1.0, reward: 25, symbol: '🐉' },
+            shadowBeast: { hp: 150, speed: 2.0, reward: 20, symbol: '👹' },
+            demonLord: { hp: 300, speed: 0.9, reward: 40, symbol: '😈' },
+            darkWizard: { hp: 180, speed: 1.3, reward: 30, symbol: '🧙‍♂️' },
+            necromancer: { hp: 250, speed: 1.1, reward: 35, symbol: '💀' },
+            ancientDragon: { hp: 400, speed: 0.8, reward: 60, symbol: '🐲' },
+            voidLord: { hp: 500, speed: 0.7, reward: 80, symbol: '👾' },
+            // NEW EPIC ENEMIES FOR LEVELS 11-20
+            abysalKnight: { hp: 600, speed: 1.0, reward: 90, symbol: '⚔️' },
+            cosmicHorror: { hp: 750, speed: 0.6, reward: 100, symbol: '🦑' },
+            shadowDragon: { hp: 800, speed: 0.9, reward: 120, symbol: '🐲' },
+            voidWarden: { hp: 900, speed: 0.8, reward: 140, symbol: '🛡️' },
+            chaosLord: { hp: 1000, speed: 1.1, reward: 160, symbol: '👹' },
+            primordialBeast: { hp: 1200, speed: 0.7, reward: 200, symbol: '🦄' },
+            voidEmperor: { hp: 1500, speed: 0.5, reward: 250, symbol: '👑' },
+            eldritchGod: { hp: 2000, speed: 0.6, reward: 300, symbol: '👁️' },
+            realityBreaker: { hp: 2500, speed: 0.8, reward: 400, symbol: '💫' },
+            theVoidItself: { hp: 3000, speed: 0.4, reward: 500, symbol: '🌌' }
+        };
+
+        // 20 Epic Levels - Extended Campaign
+        const levels = [
+            {
+                name: "The Goblin Raids",
+                story: "Dark goblins emerge from the shadow realm, testing your defenses...",
+                waves: [
+                    { enemies: [{ type: 'goblin', count: 8, interval: 1000 }] },
+                    { enemies: [{ type: 'goblin', count: 12, interval: 800 }] },
+                    { enemies: [{ type: 'goblin', count: 8, interval: 1000 }, { type: 'orc', count: 3, interval: 2000 }] }
+                ]
+            },
+            {
+                name: "The Orc Warband",
+                story: "Brutal orc warriors join the assault, their strength far exceeding the goblins...",
+                waves: [
+                    { enemies: [{ type: 'orc', count: 10, interval: 1200 }] },
+                    { enemies: [{ type: 'goblin', count: 15, interval: 600 }, { type: 'orc', count: 5, interval: 1500 }] },
+                    { enemies: [{ type: 'troll', count: 2, interval: 3000 }, { type: 'orc', count: 8, interval: 1000 }] }
+                ]
+            },
+            {
+                name: "Dragon's Wrath",
+                story: "Ancient dragons awaken, their fury threatening to consume all in their path...",
+                waves: [
+                    { enemies: [{ type: 'troll', count: 5, interval: 2000 }] },
+                    { enemies: [{ type: 'dragon', count: 1, interval: 5000 }, { type: 'troll', count: 3, interval: 2500 }] },
+                    { enemies: [{ type: 'dragon', count: 3, interval: 3000 }, { type: 'troll', count: 5, interval: 2000 }] }
+                ]
+            },
+            {
+                name: "The Shadow Plague",
+                story: "Swift shadow beasts emerge from the void, moving faster than any foe before...",
+                waves: [
+                    { enemies: [{ type: 'shadowBeast', count: 6, interval: 1500 }] },
+                    { enemies: [{ type: 'shadowBeast', count: 8, interval: 1200 }, { type: 'orc', count: 6, interval: 1800 }] },
+                    { enemies: [{ type: 'shadowBeast', count: 10, interval: 1000 }, { type: 'dragon', count: 2, interval: 4000 }] }
+                ]
+            },
+            {
+                name: "Demon Lord Invasion",
+                story: "Powerful demon lords breach the portal, their dark magic corrupting the very air...",
+                waves: [
+                    { enemies: [{ type: 'demonLord', count: 3, interval: 2500 }] },
+                    { enemies: [{ type: 'demonLord', count: 2, interval: 3000 }, { type: 'shadowBeast', count: 8, interval: 1000 }] },
+                    { enemies: [{ type: 'demonLord', count: 4, interval: 2000 }, { type: 'dragon', count: 3, interval: 3500 }] }
+                ]
+            },
+            {
+                name: "Council of Dark Wizards",
+                story: "A cabal of dark wizards orchestrates the invasion, weaving spells of destruction...",
+                waves: [
+                    { enemies: [{ type: 'darkWizard', count: 5, interval: 2000 }] },
+                    { enemies: [{ type: 'darkWizard', count: 4, interval: 2200 }, { type: 'demonLord', count: 2, interval: 3000 }] },
+                    { enemies: [{ type: 'darkWizard', count: 6, interval: 1800 }, { type: 'shadowBeast', count: 12, interval: 800 }] }
+                ]
+            },
+            {
+                name: "The Necromancer's Legion",
+                story: "Ancient necromancers raise armies of the undead, their numbers seemingly endless...",
+                waves: [
+                    { enemies: [{ type: 'necromancer', count: 4, interval: 2500 }] },
+                    { enemies: [{ type: 'necromancer', count: 3, interval: 2800 }, { type: 'darkWizard', count: 5, interval: 2000 }] },
+                    { enemies: [{ type: 'necromancer', count: 5, interval: 2200 }, { type: 'demonLord', count: 4, interval: 2500 }] }
+                ]
+            },
+            {
+                name: "The Elder Wyrms",
+                story: "Ancient dragons, older than memory itself, emerge from their eternal slumber...",
+                waves: [
+                    { enemies: [{ type: 'ancientDragon', count: 2, interval: 4000 }] },
+                    { enemies: [{ type: 'ancientDragon', count: 3, interval: 3500 }, { type: 'necromancer', count: 4, interval: 2000 }] },
+                    { enemies: [{ type: 'ancientDragon', count: 4, interval: 3000 }, { type: 'darkWizard', count: 6, interval: 1800 }] }
+                ]
+            },
+            {
+                name: "The Grand Convergence",
+                story: "All forces of darkness unite in a massive assault. The final battle approaches...",
+                waves: [
+                    { enemies: [{ type: 'shadowBeast', count: 15, interval: 800 }, { type: 'demonLord', count: 5, interval: 2000 }] },
+                    { enemies: [{ type: 'ancientDragon', count: 3, interval: 3000 }, { type: 'necromancer', count: 6, interval: 1800 }, { type: 'darkWizard', count: 8, interval: 1500 }] },
+                    { enemies: [{ type: 'ancientDragon', count: 5, interval: 2500 }, { type: 'demonLord', count: 8, interval: 1800 }, { type: 'shadowBeast', count: 20, interval: 600 }] }
+                ]
+            },
+            {
+                name: "Lords of the Void",
+                story: "The Void Lords themselves emerge - beings of pure darkness that threaten all existence...",
+                waves: [
+                    { enemies: [{ type: 'voidLord', count: 1, interval: 5000 }] },
+                    { enemies: [{ type: 'voidLord', count: 2, interval: 4000 }, { type: 'ancientDragon', count: 4, interval: 2500 }] },
+                    { enemies: [{ type: 'voidLord', count: 3, interval: 3500 }, { type: 'ancientDragon', count: 6, interval: 2000 }, { type: 'demonLord', count: 10, interval: 1500 }] }
+                ]
+            },
+            // LEVELS 11-20: THE ABYSAL CHRONICLES
+            {
+                name: "The Abysal Knights",
+                story: "The void tears open wider, releasing armored knights from the deepest abyss. These warriors are beyond death itself...",
+                waves: [
+                    { enemies: [{ type: 'abysalKnight', count: 3, interval: 3000 }] },
+                    { enemies: [{ type: 'abysalKnight', count: 4, interval: 2800 }, { type: 'voidLord', count: 2, interval: 4000 }] },
+                    { enemies: [{ type: 'abysalKnight', count: 6, interval: 2500 }, { type: 'ancientDragon', count: 4, interval: 3000 }] }
+                ]
+            },
+            {
+                name: "Cosmic Horror Awakening",
+                story: "Tentacled monstrosities from beyond the stars descend upon reality. Their very presence warps the fabric of existence...",
+                waves: [
+                    { enemies: [{ type: 'cosmicHorror', count: 2, interval: 4000 }] },
+                    { enemies: [{ type: 'cosmicHorror', count: 3, interval: 3500 }, { type: 'abysalKnight', count: 5, interval: 2000 }] },
+                    { enemies: [{ type: 'cosmicHorror', count: 4, interval: 3000 }, { type: 'voidLord', count: 6, interval: 2500 }] }
+                ]
+            },
+            {
+                name: "The Shadow Dragon Legion",
+                story: "Dragons corrupted by pure shadow magic emerge. These are not the dragons of old, but something far more sinister...",
+                waves: [
+                    { enemies: [{ type: 'shadowDragon', count: 2, interval: 4500 }] },
+                    { enemies: [{ type: 'shadowDragon', count: 3, interval: 4000 }, { type: 'cosmicHorror', count: 3, interval: 3000 }] },
+                    { enemies: [{ type: 'shadowDragon', count: 4, interval: 3500 }, { type: 'abysalKnight', count: 8, interval: 2000 }] }
+                ]
+            },
+            {
+                name: "Void Wardens' March",
+                story: "The void's own guardians march forth, their duty to ensure reality's complete annihilation. They cannot be reasoned with...",
+                waves: [
+                    { enemies: [{ type: 'voidWarden', count: 2, interval: 4000 }] },
+                    { enemies: [{ type: 'voidWarden', count: 3, interval: 3800 }, { type: 'shadowDragon', count: 2, interval: 4500 }] },
+                    { enemies: [{ type: 'voidWarden', count: 4, interval: 3500 }, { type: 'cosmicHorror', count: 5, interval: 3000 }] }
+                ]
+            },
+            {
+                name: "Chaos Lords Unleashed",
+                story: "Pure chaos incarnate breaks free from its eternal prison. These beings seek to unravel the very laws of reality...",
+                waves: [
+                    { enemies: [{ type: 'chaosLord', count: 2, interval: 3500 }] },
+                    { enemies: [{ type: 'chaosLord', count: 3, interval: 3200 }, { type: 'voidWarden', count: 4, interval: 3800 }] },
+                    { enemies: [{ type: 'chaosLord', count: 5, interval: 3000 }, { type: 'shadowDragon', count: 3, interval: 4000 }] }
+                ]
+            },
+            {
+                name: "Primordial Beast Rampage",
+                story: "Ancient beasts from the dawn of creation awaken. These entities predate gods themselves and seek to reclaim their domain...",
+                waves: [
+                    { enemies: [{ type: 'primordialBeast', count: 1, interval: 5000 }] },
+                    { enemies: [{ type: 'primordialBeast', count: 2, interval: 4500 }, { type: 'chaosLord', count: 4, interval: 3000 }] },
+                    { enemies: [{ type: 'primordialBeast', count: 3, interval: 4000 }, { type: 'voidWarden', count: 6, interval: 3500 }] }
+                ]
+            },
+            {
+                name: "The Void Emperor's Arrival",
+                story: "The ruler of the void dimension has finally awakened. His presence alone begins to unravel the magical barriers protecting your realm...",
+                waves: [
+                    { enemies: [{ type: 'voidEmperor', count: 1, interval: 6000 }] },
+                    { enemies: [{ type: 'voidEmperor', count: 1, interval: 5500 }, { type: 'primordialBeast', count: 2, interval: 4000 }] },
+                    { enemies: [{ type: 'voidEmperor', count: 2, interval: 5000 }, { type: 'chaosLord', count: 6, interval: 2800 }] }
+                ]
+            },
+            {
+                name: "Eldritch Gods Descend",
+                story: "Beings so ancient and powerful that reality itself recoils from their presence. These are the gods of the void, and they hunger for existence itself...",
+                waves: [
+                    { enemies: [{ type: 'eldritchGod', count: 1, interval: 6000 }] },
+                    { enemies: [{ type: 'eldritchGod', count: 1, interval: 5500 }, { type: 'voidEmperor', count: 2, interval: 5000 }] },
+                    { enemies: [{ type: 'eldritchGod', count: 2, interval: 5000 }, { type: 'primordialBeast', count: 4, interval: 4000 }] }
+                ]
+            },
+            {
+                name: "Reality Breakers Emerge",
+                story: "The ultimate weapons of the void manifest. These entities don't just destroy - they unmake. Everything they touch ceases to have ever existed...",
+                waves: [
+                    { enemies: [{ type: 'realityBreaker', count: 1, interval: 7000 }] },
+                    { enemies: [{ type: 'realityBreaker', count: 1, interval: 6500 }, { type: 'eldritchGod', count: 2, interval: 5500 }] },
+                    { enemies: [{ type: 'realityBreaker', count: 2, interval: 6000 }, { type: 'voidEmperor', count: 3, interval: 4500 }] }
+                ]
+            },
+            {
+                name: "The Void Itself",
+                story: "The final confrontation. The Void has taken physical form - an incomprehensible entity of pure nothingness that seeks to consume all existence. This is the ultimate test of your power as the Arcane Guardian. The fate of not just your realm, but all reality, hangs in the balance...",
+                waves: [
+                    { enemies: [{ type: 'theVoidItself', count: 1, interval: 8000 }] },
+                    { enemies: [{ type: 'theVoidItself', count: 1, interval: 7000 }, { type: 'realityBreaker', count: 2, interval: 6000 }] },
+                    { enemies: [{ type: 'theVoidItself', count: 2, interval: 6000 }, { type: 'eldritchGod', count: 3, interval: 5000 }, { type: 'voidEmperor', count: 4, interval: 4500 }] }
+                ]
+            }
+        ];
+
+        // 20 Unique Paths - Each More Complex Than The Last!
+        const levelPaths = [
+            // Levels 1-10 (Original)
+            [{ x: 0, y: 250 }, { x: 150, y: 250 }, { x: 150, y: 180 }, { x: 320, y: 180 }, { x: 320, y: 320 }, { x: 480, y: 320 }, { x: 480, y: 200 }, { x: 650, y: 200 }, { x: 800, y: 200 }],
+            [{ x: 0, y: 200 }, { x: 120, y: 200 }, { x: 120, y: 120 }, { x: 280, y: 120 }, { x: 280, y: 280 }, { x: 420, y: 280 }, { x: 420, y: 150 }, { x: 580, y: 150 }, { x: 580, y: 380 }, { x: 800, y: 380 }],
+            [{ x: 0, y: 300 }, { x: 80, y: 300 }, { x: 80, y: 120 }, { x: 250, y: 120 }, { x: 250, y: 380 }, { x: 420, y: 380 }, { x: 420, y: 180 }, { x: 580, y: 180 }, { x: 580, y: 330 }, { x: 800, y: 330 }],
+            [{ x: 0, y: 200 }, { x: 100, y: 200 }, { x: 100, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 300 }, { x: 500, y: 300 }, { x: 500, y: 150 }, { x: 700, y: 150 }, { x: 700, y: 400 }, { x: 800, y: 400 }],
+            [{ x: 0, y: 250 }, { x: 120, y: 250 }, { x: 120, y: 120 }, { x: 350, y: 120 }, { x: 350, y: 350 }, { x: 200, y: 350 }, { x: 200, y: 180 }, { x: 600, y: 180 }, { x: 600, y: 450 }, { x: 800, y: 450 }],
+            [{ x: 0, y: 150 }, { x: 150, y: 150 }, { x: 150, y: 80 }, { x: 250, y: 80 }, { x: 250, y: 220 }, { x: 350, y: 220 }, { x: 350, y: 300 }, { x: 550, y: 300 }, { x: 550, y: 120 }, { x: 800, y: 120 }],
+            [{ x: 0, y: 100 }, { x: 100, y: 100 }, { x: 100, y: 350 }, { x: 200, y: 350 }, { x: 200, y: 80 }, { x: 400, y: 80 }, { x: 400, y: 400 }, { x: 600, y: 400 }, { x: 600, y: 180 }, { x: 800, y: 180 }],
+            [{ x: 0, y: 200 }, { x: 80, y: 200 }, { x: 80, y: 120 }, { x: 200, y: 120 }, { x: 200, y: 350 }, { x: 320, y: 350 }, { x: 320, y: 80 }, { x: 500, y: 80 }, { x: 500, y: 300 }, { x: 650, y: 300 }, { x: 650, y: 150 }, { x: 800, y: 150 }],
+            [{ x: 0, y: 250 }, { x: 60, y: 250 }, { x: 60, y: 100 }, { x: 180, y: 100 }, { x: 180, y: 400 }, { x: 280, y: 400 }, { x: 280, y: 150 }, { x: 450, y: 150 }, { x: 450, y: 350 }, { x: 580, y: 350 }, { x: 580, y: 80 }, { x: 720, y: 80 }, { x: 720, y: 300 }, { x: 800, y: 300 }],
+            [{ x: 0, y: 200 }, { x: 50, y: 200 }, { x: 50, y: 80 }, { x: 150, y: 80 }, { x: 150, y: 350 }, { x: 250, y: 350 }, { x: 250, y: 120 }, { x: 350, y: 120 }, { x: 350, y: 400 }, { x: 450, y: 400 }, { x: 450, y: 100 }, { x: 550, y: 100 }, { x: 550, y: 320 }, { x: 650, y: 320 }, { x: 650, y: 180 }, { x: 750, y: 180 }, { x: 750, y: 450 }, { x: 800, y: 450 }],
+            
+            // Levels 11-20 (NEW EXTREME PATHS)
+            // Level 11: Abysal Spiral
+            [{ x: 0, y: 250 }, { x: 40, y: 250 }, { x: 40, y: 60 }, { x: 120, y: 60 }, { x: 120, y: 450 }, { x: 200, y: 450 }, { x: 200, y: 100 }, { x: 300, y: 100 }, { x: 300, y: 400 }, { x: 400, y: 400 }, { x: 400, y: 140 }, { x: 500, y: 140 }, { x: 500, y: 360 }, { x: 600, y: 360 }, { x: 600, y: 180 }, { x: 700, y: 180 }, { x: 700, y: 320 }, { x: 800, y: 320 }],
+            
+            // Level 12: Cosmic Maze
+            [{ x: 0, y: 150 }, { x: 30, y: 150 }, { x: 30, y: 400 }, { x: 90, y: 400 }, { x: 90, y: 50 }, { x: 150, y: 50 }, { x: 150, y: 350 }, { x: 220, y: 350 }, { x: 220, y: 120 }, { x: 300, y: 120 }, { x: 300, y: 450 }, { x: 380, y: 450 }, { x: 380, y: 80 }, { x: 460, y: 80 }, { x: 460, y: 380 }, { x: 540, y: 380 }, { x: 540, y: 140 }, { x: 620, y: 140 }, { x: 620, y: 420 }, { x: 700, y: 420 }, { x: 700, y: 200 }, { x: 800, y: 200 }],
+            
+            // Level 13: Shadow Dragon Loops
+            [{ x: 0, y: 300 }, { x: 60, y: 300 }, { x: 60, y: 100 }, { x: 140, y: 100 }, { x: 140, y: 250 }, { x: 200, y: 250 }, { x: 200, y: 150 }, { x: 260, y: 150 }, { x: 260, y: 350 }, { x: 320, y: 350 }, { x: 320, y: 50 }, { x: 400, y: 50 }, { x: 400, y: 300 }, { x: 480, y: 300 }, { x: 480, y: 120 }, { x: 560, y: 120 }, { x: 560, y: 400 }, { x: 640, y: 400 }, { x: 640, y: 180 }, { x: 720, y: 180 }, { x: 720, y: 350 }, { x: 800, y: 350 }],
+            
+            // Level 14: Void Warden Gauntlet
+            [{ x: 0, y: 200 }, { x: 25, y: 200 }, { x: 25, y: 50 }, { x: 75, y: 50 }, { x: 75, y: 400 }, { x: 125, y: 400 }, { x: 125, y: 80 }, { x: 175, y: 80 }, { x: 175, y: 370 }, { x: 225, y: 370 }, { x: 225, y: 110 }, { x: 275, y: 110 }, { x: 275, y: 340 }, { x: 325, y: 340 }, { x: 325, y: 140 }, { x: 375, y: 140 }, { x: 375, y: 310 }, { x: 425, y: 310 }, { x: 425, y: 170 }, { x: 475, y: 170 }, { x: 475, y: 280 }, { x: 525, y: 280 }, { x: 525, y: 200 }, { x: 575, y: 200 }, { x: 575, y: 250 }, { x: 625, y: 250 }, { x: 625, y: 150 }, { x: 675, y: 150 }, { x: 675, y: 300 }, { x: 725, y: 300 }, { x: 725, y: 100 }, { x: 800, y: 100 }],
+            
+            // Level 15: Chaos Lord Pandemonium
+            [{ x: 0, y: 250 }, { x: 35, y: 250 }, { x: 35, y: 120 }, { x: 70, y: 120 }, { x: 70, y: 380 }, { x: 105, y: 380 }, { x: 105, y: 90 }, { x: 150, y: 90 }, { x: 150, y: 350 }, { x: 195, y: 350 }, { x: 195, y: 60 }, { x: 240, y: 60 }, { x: 240, y: 320 }, { x: 285, y: 320 }, { x: 285, y: 160 }, { x: 330, y: 160 }, { x: 330, y: 410 }, { x: 375, y: 410 }, { x: 375, y: 130 }, { x: 420, y: 130 }, { x: 420, y: 290 }, { x: 465, y: 290 }, { x: 465, y: 70 }, { x: 510, y: 70 }, { x: 510, y: 360 }, { x: 555, y: 360 }, { x: 555, y: 100 }, { x: 600, y: 100 }, { x: 600, y: 330 }, { x: 645, y: 330 }, { x: 645, y: 180 }, { x: 690, y: 180 }, { x: 690, y: 270 }, { x: 735, y: 270 }, { x: 735, y: 220 }, { x: 800, y: 220 }],
+            
+            // Level 16: Primordial Beast Rampage
+            [{ x: 0, y: 300 }, { x: 40, y: 300 }, { x: 40, y: 50 }, { x: 80, y: 50 }, { x: 80, y: 350 }, { x: 120, y: 350 }, { x: 120, y: 100 }, { x: 160, y: 100 }, { x: 160, y: 400 }, { x: 200, y: 400 }, { x: 200, y: 150 }, { x: 240, y: 150 }, { x: 240, y: 450 }, { x: 280, y: 450 }, { x: 280, y: 80 }, { x: 320, y: 80 }, { x: 320, y: 320 }, { x: 360, y: 320 }, { x: 360, y: 180 }, { x: 400, y: 180 }, { x: 400, y: 420 }, { x: 440, y: 420 }, { x: 440, y: 120 }, { x: 480, y: 120 }, { x: 480, y: 380 }, { x: 520, y: 380 }, { x: 520, y: 60 }, { x: 560, y: 60 }, { x: 560, y: 340 }, { x: 600, y: 340 }, { x: 600, y: 200 }, { x: 640, y: 200 }, { x: 640, y: 300 }, { x: 680, y: 300 }, { x: 680, y: 140 }, { x: 720, y: 140 }, { x: 720, y: 400 }, { x: 760, y: 400 }, { x: 760, y: 250 }, { x: 800, y: 250 }],
+            
+            // Level 17: Void Emperor's Domain
+            [{ x: 0, y: 200 }, { x: 20, y: 200 }, { x: 20, y: 450 }, { x: 50, y: 450 }, { x: 50, y: 60 }, { x: 80, y: 60 }, { x: 80, y: 350 }, { x: 110, y: 350 }, { x: 110, y: 120 }, { x: 140, y: 120 }, { x: 140, y: 400 }, { x: 170, y: 400 }, { x: 170, y: 90 }, { x: 200, y: 90 }, { x: 200, y: 320 }, { x: 230, y: 320 }, { x: 230, y: 150 }, { x: 260, y: 150 }, { x: 260, y: 380 }, { x: 290, y: 380 }, { x: 290, y: 80 }, { x: 320, y: 80 }, { x: 320, y: 280 }, { x: 350, y: 280 }, { x: 350, y: 180 }, { x: 380, y: 180 }, { x: 380, y: 420 }, { x: 410, y: 420 }, { x: 410, y: 110 }, { x: 440, y: 110 }, { x: 440, y: 340 }, { x: 470, y: 340 }, { x: 470, y: 70 }, { x: 500, y: 70 }, { x: 500, y: 300 }, { x: 530, y: 300 }, { x: 530, y: 160 }, { x: 560, y: 160 }, { x: 560, y: 360 }, { x: 590, y: 360 }, { x: 590, y: 130 }, { x: 620, y: 130 }, { x: 620, y: 290 }, { x: 650, y: 290 }, { x: 650, y: 220 }, { x: 680, y: 220 }, { x: 680, y: 260 }, { x: 710, y: 260 }, { x: 710, y: 200 }, { x: 740, y: 200 }, { x: 740, y: 280 }, { x: 770, y: 280 }, { x: 770, y: 240 }, { x: 800, y: 240 }],
+            
+            // Level 18: Eldritch Gods' Madness
+            [{ x: 0, y: 250 }, { x: 30, y: 250 }, { x: 30, y: 100 }, { x: 60, y: 100 }, { x: 60, y: 400 }, { x: 90, y: 400 }, { x: 90, y: 50 }, { x: 120, y: 50 }, { x: 120, y: 300 }, { x: 150, y: 300 }, { x: 150, y: 150 }, { x: 180, y: 150 }, { x: 180, y: 450 }, { x: 210, y: 450 }, { x: 210, y: 80 }, { x: 240, y: 80 }, { x: 240, y: 350 }, { x: 270, y: 350 }, { x: 270, y: 200 }, { x: 300, y: 200 }, { x: 300, y: 420 }, { x: 330, y: 420 }, { x: 330, y: 120 }, { x: 360, y: 120 }, { x: 360, y: 380 }, { x: 390, y: 380 }, { x: 390, y: 180 }, { x: 420, y: 180 }, { x: 420, y: 320 }, { x: 450, y: 320 }, { x: 450, y: 60 }, { x: 480, y: 60 }, { x: 480, y: 280 }, { x: 510, y: 280 }, { x: 510, y: 140 }, { x: 540, y: 140 }, { x: 540, y: 360 }, { x: 570, y: 360 }, { x: 570, y: 100 }, { x: 600, y: 100 }, { x: 600, y: 300 }, { x: 630, y: 300 }, { x: 630, y: 220 }, { x: 660, y: 220 }, { x: 660, y: 340 }, { x: 690, y: 340 }, { x: 690, y: 160 }, { x: 720, y: 160 }, { x: 720, y: 380 }, { x: 750, y: 380 }, { x: 750, y: 270 }, { x: 780, y: 270 }, { x: 780, y: 200 }, { x: 800, y: 200 }],
+            
+            // Level 19: Reality Breaker Nightmare
+            [{ x: 0, y: 150 }, { x: 25, y: 150 }, { x: 25, y: 50 }, { x: 50, y: 50 }, { x: 50, y: 250 }, { x: 75, y: 250 }, { x: 75, y: 450 }, { x: 100, y: 450 }, { x: 100, y: 80 }, { x: 125, y: 80 }, { x: 125, y: 350 }, { x: 150, y: 350 }, { x: 150, y: 180 }, { x: 175, y: 180 }, { x: 175, y: 420 }, { x: 200, y: 420 }, { x: 200, y: 120 }, { x: 225, y: 120 }, { x: 225, y: 300 }, { x: 250, y: 300 }, { x: 250, y: 60 }, { x: 275, y: 60 }, { x: 275, y: 380 }, { x: 300, y: 380 }, { x: 300, y: 200 }, { x: 325, y: 200 }, { x: 325, y: 450 }, { x: 350, y: 450 }, { x: 350, y: 100 }, { x: 375, y: 100 }, { x: 375, y: 320 }, { x: 400, y: 320 }, { x: 400, y: 160 }, { x: 425, y: 160 }, { x: 425, y: 400 }, { x: 450, y: 400 }, { x: 450, y: 80 }, { x: 475, y: 80 }, { x: 475, y: 280 }, { x: 500, y: 280 }, { x: 500, y: 220 }, { x: 525, y: 220 }, { x: 525, y: 360 }, { x: 550, y: 360 }, { x: 550, y: 140 }, { x: 575, y: 140 }, { x: 575, y: 300 }, { x: 600, y: 300 }, { x: 600, y: 60 }, { x: 625, y: 60 }, { x: 625, y: 250 }, { x: 650, y: 250 }, { x: 650, y: 420 }, { x: 675, y: 420 }, { x: 675, y: 180 }, { x: 700, y: 180 }, { x: 700, y: 340 }, { x: 725, y: 340 }, { x: 725, y: 120 }, { x: 750, y: 120 }, { x: 750, y: 260 }, { x: 775, y: 260 }, { x: 775, y: 400 }, { x: 800, y: 400 }],
+            
+            // Level 20: The Void Itself - Ultimate Chaos Path
+            [{ x: 0, y: 225 }, { x: 15, y: 225 }, { x: 15, y: 50 }, { x: 30, y: 50 }, { x: 30, y: 400 }, { x: 45, y: 400 }, { x: 45, y: 100 }, { x: 60, y: 100 }, { x: 60, y: 350 }, { x: 75, y: 350 }, { x: 75, y: 150 }, { x: 90, y: 150 }, { x: 90, y: 450 }, { x: 105, y: 450 }, { x: 105, y: 80 }, { x: 120, y: 80 }, { x: 120, y: 300 }, { x: 135, y: 300 }, { x: 135, y: 200 }, { x: 150, y: 200 }, { x: 150, y: 420 }, { x: 165, y: 420 }, { x: 165, y: 60 }, { x: 180, y: 60 }, { x: 180, y: 280 }, { x: 195, y: 280 }, { x: 195, y: 380 }, { x: 210, y: 380 }, { x: 210, y: 120 }, { x: 225, y: 120 }, { x: 225, y: 320 }, { x: 240, y: 320 }, { x: 240, y: 180 }, { x: 255, y: 180 }, { x: 255, y: 440 }, { x: 270, y: 440 }, { x: 270, y: 90 }, { x: 285, y: 90 }, { x: 285, y: 360 }, { x: 300, y: 360 }, { x: 300, y: 240 }, { x: 315, y: 240 }, { x: 315, y: 400 }, { x: 330, y: 400 }, { x: 330, y: 160 }, { x: 345, y: 160 }, { x: 345, y: 300 }, { x: 360, y: 300 }, { x: 360, y: 80 }, { x: 375, y: 80 }, { x: 375, y: 260 }, { x: 390, y: 260 }, { x: 390, y: 420 }, { x: 405, y: 420 }, { x: 405, y: 140 }, { x: 420, y: 140 }, { x: 420, y: 340 }, { x: 435, y: 340 }, { x: 435, y: 100 }, { x: 450, y: 100 }, { x: 450, y: 280 }, { x: 465, y: 280 }, { x: 465, y: 380 }, { x: 480, y: 380 }, { x: 480, y: 200 }, { x: 495, y: 200 }, { x: 495, y: 320 }, { x: 510, y: 320 }, { x: 510, y: 120 }, { x: 525, y: 120 }, { x: 525, y: 300 }, { x: 540, y: 300 }, { x: 540, y: 180 }, { x: 555, y: 180 }, { x: 555, y: 360 }, { x: 570, y: 360 }, { x: 570, y: 80 }, { x: 585, y: 80 }, { x: 585, y: 240 }, { x: 600, y: 240 }, { x: 600, y: 400 }, { x: 615, y: 400 }, { x: 615, y: 160 }, { x: 630, y: 160 }, { x: 630, y: 280 }, { x: 645, y: 280 }, { x: 645, y: 120 }, { x: 660, y: 120 }, { x: 660, y: 340 }, { x: 675, y: 340 }, { x: 675, y: 200 }, { x: 690, y: 200 }, { x: 690, y: 380 }, { x: 705, y: 380 }, { x: 705, y: 140 }, { x: 720, y: 140 }, { x: 720, y: 300 }, { x: 735, y: 300 }, { x: 735, y: 80 }, { x: 750, y: 80 }, { x: 750, y: 260 }, { x: 765, y: 260 }, { x: 765, y: 360 }, { x: 780, y: 360 }, { x: 780, y: 220 }, { x: 795, y: 220 }, { x: 795, y: 280 }, { x: 800, y: 280 }]
+        ];
+
+        let audioContext;
+        let backgroundMusic;
+        let currentStoryLevel = 0;
+
+        // Initialize game functions
+        function startStoryMode() {
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('storyMode').style.display = 'flex';
+            currentStoryLevel = 0;
+        }
+
+        function startStoryGame() {
+            document.getElementById('storyMode').style.display = 'none';
+            startGame('story');
+        }
+
+        function showInstructions() {
+            alert(`🧙‍♂️ MYSTIC TOWER DEFENSE - EPIC 20-LEVEL CAMPAIGN!
+
+🎯 OBJECTIVE: Defend your realm through 20 increasingly epic levels!
+
+📖 EPIC STORY MODE: Experience the complete saga across 20 unique levels
+⚔️ SINGLE PLAYER: Play individual levels  
+👥 MULTIPLAYER: Challenge mode
+
+🏗️ TOWERS:
+• Arrow Tower (🏹): Fast, light damage
+• Magic Tower (🔮): Balanced damage and speed  
+• Crossbow Tower (🏹): Slow, heavy damage
+• Fireball Tower (🔥): Area damage explosions
+
+👹 ENEMIES (20 TYPES!):
+📘 LEVELS 1-10: Goblins, Orcs, Trolls, Dragons, Shadow Beasts, Demon Lords, Dark Wizards, Necromancers, Ancient Dragons, Void Lords
+
+🌌 LEVELS 11-20 - THE ABYSAL CHRONICLES:
+Abysal Knights, Cosmic Horrors, Shadow Dragons, Void Wardens, Chaos Lords, Primordial Beasts, Void Emperors, Eldritch Gods, Reality Breakers, and THE VOID ITSELF!
+
+⚡ POWER-UPS:
+• Fireball (🔥): Area damage blast
+• Magic Strike (⚡): Lightning damage to strongest enemies
+
+🎮 CONTROLS:
+• Click tower buttons to select
+• Click empty slots to build  
+• Click towers to upgrade (up to level 5!)
+• Use 2x speed for faster gameplay
+
+💰 Strategy: Earn gold by defeating enemies!
+Each level introduces new mechanics and greater challenges!
+
+🏆 Can you survive all 20 levels and save reality itself?`);
+        }
+
+        function startGame(mode) {
+            gameState.gameMode = mode;
+            document.getElementById('mainMenu').style.display = 'none';
+            document.getElementById('gameArea').style.display = 'flex';
+            initAudio();
+            initializeLevel();
+            gameLoop();
+        }
+
+        function initAudio() {
+            try {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                const masterGain = audioContext.createGain();
+                masterGain.connect(audioContext.destination);
+                masterGain.gain.setValueAtTime(0.1, audioContext.currentTime);
+                
+                const baseOsc = audioContext.createOscillator();
+                const baseGain = audioContext.createGain();
+                baseOsc.connect(baseGain);
+                baseGain.connect(masterGain);
+                baseOsc.frequency.setValueAtTime(55, audioContext.currentTime);
+                baseOsc.type = 'sine';
+                baseGain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                baseOsc.start();
+                
+                const melodyOsc = audioContext.createOscillator();
+                const melodyGain = audioContext.createGain();
+                melodyOsc.connect(melodyGain);
+                melodyGain.connect(masterGain);
+                melodyOsc.type = 'triangle';
+                melodyGain.gain.setValueAtTime(0.2, audioContext.currentTime);
+                melodyOsc.start();
+                
+                backgroundMusic = { master: masterGain, base: baseOsc, melody: melodyOsc };
+                
+                const scales = [[220, 247, 277, 294, 330, 370, 415], [233, 262, 294, 311, 349, 392, 440]];
+                let currentScale = 0;
+                let noteIndex = 0;
+                
+                setInterval(() => {
+                    if (backgroundMusic && !gameState.isPaused) {
+                        const scale = scales[currentScale];
+                        melodyOsc.frequency.setValueAtTime(scale[noteIndex], audioContext.currentTime);
+                        noteIndex = (noteIndex + 1) % scale.length;
+                        if (noteIndex === 0) currentScale = (currentScale + 1) % scales.length;
+                        
+                        const tremolo = 55 + Math.sin(Date.now() / 1000) * 3;
+                        baseOsc.frequency.setValueAtTime(tremolo, audioContext.currentTime);
+                    }
+                }, 800);
+            } catch (e) {
+                console.log('Audio not supported');
+            }
+        }
+
+        function playSound(frequency, duration, type = 'sine', volume = 0.3) {
+            if (!audioContext) return;
+            
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+            
+            oscillator.frequency.setValueAtTime(frequency, audioContext.currentTime);
+            oscillator.type = type;
+            gainNode.gain.setValueAtTime(volume, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+            
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + duration);
+        }
+
+        function initializeLevel() {
+            const gameBoard = document.getElementById('gameBoard');
+            gameBoard.innerHTML = '';
+            
+            createPath();
+            createTowerSlots();
+            
+            gameState.currentWave = 1;
+            gameState.enemies = [];
+            gameState.projectiles = [];
+            gameState.towers = [];
+            gameState.waveInProgress = false;
+            
+            updateUI();
+        }
+
+        function createPath() {
+            const gameBoard = document.getElementById('gameBoard');
+            const path = levelPaths[gameState.currentLevel - 1] || levelPaths[0];
+            
+            for (let i = 0; i < path.length - 1; i++) {
+                const current = path[i];
+                const next = path[i + 1];
+                
+                const pathElement = document.createElement('div');
+                pathElement.className = 'path';
+                
+                if (current.x === next.x) {
+                    pathElement.style.left = current.x + 'px';
+                    pathElement.style.top = Math.min(current.y, next.y) + 'px';
+                    pathElement.style.width = '30px';
+                    pathElement.style.height = Math.abs(next.y - current.y) + 'px';
+                } else {
+                    pathElement.style.left = Math.min(current.x, next.x) + 'px';
+                    pathElement.style.top = current.y + 'px';
+                    pathElement.style.width = Math.abs(next.x - current.x) + 'px';
+                    pathElement.style.height = '30px';
+                }
+                
+                gameBoard.appendChild(pathElement);
+            }
+        }
+
+        function createTowerSlots() {
+            const gameBoard = document.getElementById('gameBoard');
+            const slots = [
+                { x: 50, y: 80 }, { x: 200, y: 50 }, { x: 380, y: 80 },
+                { x: 50, y: 350 }, { x: 200, y: 380 }, { x: 380, y: 420 },
+                { x: 550, y: 80 }, { x: 700, y: 50 }, { x: 550, y: 420 },
+                { x: 200, y: 220 }, { x: 380, y: 250 }, { x: 550, y: 280 }
+            ];
+            
+            slots.forEach((slot, index) => {
+                const slotElement = document.createElement('div');
+                slotElement.className = 'tower-slot';
+                slotElement.style.left = slot.x + 'px';
+                slotElement.style.top = slot.y + 'px';
+                slotElement.dataset.slotId = index;
+                slotElement.onclick = () => handleSlotClick(index);
+                gameBoard.appendChild(slotElement);
+            });
+        }
+
+        function handleSlotClick(slotId) {
+            const tower = gameState.towers.find(t => t.slotId === slotId);
+            
+            if (tower) {
+                upgradeTower(tower);
+            } else if (gameState.selectedTower) {
+                buildTower(slotId, gameState.selectedTower);
+            }
+        }
+
+        function selectTower(type) {
+            const cost = towerTypes[type].cost;
+            if (gameState.gold >= cost) {
+                gameState.selectedTower = type;
+                document.querySelectorAll('.tower-buy-btn').forEach(btn => {
+                    btn.style.background = 'linear-gradient(45deg, #4a148c, #6a1b9a)';
+                });
+                event.target.style.background = 'linear-gradient(45deg, #2e7d32, #388e3c)';
+                playSound(800, 0.1);
+            } else {
+                playSound(200, 0.3, 'square');
+            }
+        }
+
+        function buildTower(slotId, type) {
+            const cost = towerTypes[type].cost;
+            if (gameState.gold >= cost) {
+                gameState.gold -= cost;
+                
+                const slot = document.querySelector(`[data-slot-id="${slotId}"]`);
+                const rect = slot.getBoundingClientRect();
+                const boardRect = document.getElementById('gameBoard').getBoundingClientRect();
+                
+                const tower = {
+                    id: Date.now(),
+                    type: type,
+                    slotId: slotId,
+                    x: rect.left - boardRect.left + 30,
+                    y: rect.top - boardRect.top + 30,
+                    level: 1,
+                    lastShot: 0,
+                    target: null
+                };
+                
+                gameState.towers.push(tower);
+                
+                const towerElement = document.createElement('div');
+                towerElement.className = `tower ${type}-tower`;
+                towerElement.innerHTML = towerTypes[type].symbol;
+                towerElement.dataset.towerId = tower.id;
+                towerElement.onclick = () => upgradeTower(tower);
+                
+                const upgradeInfo = document.createElement('div');
+                upgradeInfo.className = 'tower-upgrade-info';
+                upgradeInfo.textContent = `Lv.${tower.level}`;
+                towerElement.appendChild(upgradeInfo);
+                
+                slot.innerHTML = '';
+                slot.appendChild(towerElement);
+                
+                gameState.selectedTower = null;
+                playSound(600, 0.2);
+                updateUI();
+            }
+        }
+
+        function upgradeTower(tower) {
+            const upgradeCost = towerTypes[tower.type].upgradeCost * tower.level;
+            if (gameState.gold >= upgradeCost && tower.level < 5) {
+                gameState.gold -= upgradeCost;
+                tower.level++;
+                
+                const towerElement = document.querySelector(`[data-tower-id="${tower.id}"]`);
+                towerElement.style.transform = `scale(${1 + tower.level * 0.1})`;
+                
+                const borderColors = ['#9c27b0', '#ff9800', '#4caf50', '#f44336', '#ffd700'];
+                towerElement.style.border = `3px solid ${borderColors[tower.level - 1]}`;
+                
+                const upgradeInfo = towerElement.querySelector('.tower-upgrade-info');
+                if (upgradeInfo) {
+                    upgradeInfo.textContent = tower.level === 5 ? 'MAX' : `Lv.${tower.level}`;
+                    if (tower.level === 5) upgradeInfo.style.color = '#ffd700';
+                }
+                
+                playSound(900, 0.3);
+                showTowerRange(tower);
+                updateUI();
+            } else if (tower.level >= 5) {
+                showTowerRange(tower);
+            }
+        }
+
+        function setGameSpeed(speed) {
+            gameState.gameSpeed = speed;
+            
+            document.querySelectorAll('.speed-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`speed${speed}x`).classList.add('active');
+            
+            playSound(1200, 0.1);
+        }
+
+        function showTowerRange(tower) {
+            document.querySelectorAll('.range-indicator').forEach(el => el.remove());
+            
+            const range = towerTypes[tower.type].range * (1 + tower.level * 0.2);
+            const indicator = document.createElement('div');
+            indicator.className = 'range-indicator';
+            indicator.style.left = (tower.x - range) + 'px';
+            indicator.style.top = (tower.y - range) + 'px';
+            indicator.style.width = (range * 2) + 'px';
+            indicator.style.height = (range * 2) + 'px';
+            
+            document.getElementById('gameBoard').appendChild(indicator);
+            
+            setTimeout(() => indicator.remove(), 2000);
+        }
+
+        function startWave() {
+            if (gameState.waveInProgress) return;
+            
+            gameState.waveInProgress = true;
+            document.getElementById('startWaveBtn').disabled = true;
+            
+            const currentLevelData = levels[gameState.currentLevel - 1];
+            const waveData = currentLevelData.waves[gameState.currentWave - 1];
+            
+            playSound(400, 0.5, 'triangle');
+            
+            waveData.enemies.forEach(enemyGroup => {
+                let count = 0;
+                const spawnInterval = setInterval(() => {
+                    if (count >= enemyGroup.count) {
+                        clearInterval(spawnInterval);
+                        return;
+                    }
+                    
+                    spawnEnemy(enemyGroup.type);
+                    count++;
+                }, enemyGroup.interval / gameState.gameSpeed);
+            });
+        }
+
+        function spawnEnemy(type) {
+            const path = levelPaths[gameState.currentLevel - 1] || levelPaths[0];
+            const enemy = {
+                id: Date.now() + Math.random(),
+                type: type,
+                hp: enemyTypes[type].hp,
+                maxHp: enemyTypes[type].hp,
+                speed: enemyTypes[type].speed,
+                x: path[0].x,
+                y: path[0].y,
+                pathIndex: 0,
+                progress: 0
+            };
+            
+            gameState.enemies.push(enemy);
+            
+            const enemyElement = document.createElement('div');
+            enemyElement.className = `enemy ${type}`;
+            enemyElement.innerHTML = enemyTypes[type].symbol;
+            enemyElement.dataset.enemyId = enemy.id;
+            enemyElement.style.left = enemy.x + 'px';
+            enemyElement.style.top = enemy.y + 'px';
+            
+            const healthBar = document.createElement('div');
+            healthBar.style.cssText = 'position:absolute;top:-8px;left:0;width:25px;height:4px;background:red;border:1px solid black;';
+            enemyElement.appendChild(healthBar);
+            
+            document.getElementById('gameBoard').appendChild(enemyElement);
+        }
+
+        function updateEnemies() {
+            const path = levelPaths[gameState.currentLevel - 1] || levelPaths[0];
+            
+            gameState.enemies.forEach(enemy => {
+                if (enemy.pathIndex >= path.length - 1) {
+                    gameState.lives--;
+                    removeEnemy(enemy);
+                    playSound(150, 0.5, 'square');
+                    
+                    if (gameState.lives <= 0) {
+                        gameOver();
+                    }
+                    return;
+                }
+                
+                const current = path[enemy.pathIndex];
+                const next = path[enemy.pathIndex + 1];
+                
+                const dx = next.x - current.x;
+                const dy = next.y - current.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                enemy.progress += enemy.speed * gameState.gameSpeed;
+                
+                if (enemy.progress >= distance) {
+                    enemy.progress = 0;
+                    enemy.pathIndex++;
+                    if (enemy.pathIndex < path.length) {
+                        enemy.x = path[enemy.pathIndex].x;
+                        enemy.y = path[enemy.pathIndex].y;
+                    }
+                } else {
+                    const ratio = enemy.progress / distance;
+                    enemy.x = current.x + dx * ratio;
+                    enemy.y = current.y + dy * ratio;
+                }
+                
+                const enemyElement = document.querySelector(`[data-enemy-id="${enemy.id}"]`);
+                if (enemyElement) {
+                    enemyElement.style.left = enemy.x + 'px';
+                    enemyElement.style.top = enemy.y + 'px';
+                    
+                    const healthBar = enemyElement.querySelector('div');
+                    if (healthBar) {
+                        const healthPercent = enemy.hp / enemy.maxHp;
+                        healthBar.style.width = (25 * healthPercent) + 'px';
+                        healthBar.style.background = healthPercent > 0.5 ? 'green' : healthPercent > 0.25 ? 'yellow' : 'red';
+                    }
+                }
+            });
+        }
+
+        function updateTowers() {
+            const now = Date.now();
+            
+            gameState.towers.forEach(tower => {
+                const towerStats = towerTypes[tower.type];
+                const range = towerStats.range * (1 + tower.level * 0.2);
+                const damage = towerStats.damage * (1 + tower.level * 0.5);
+                const speed = towerStats.speed / (1 + tower.level * 0.2) / gameState.gameSpeed;
+                
+                if (now - tower.lastShot < speed) return;
+                
+                let target = null;
+                let closestDistance = range;
+                
+                gameState.enemies.forEach(enemy => {
+                    const distance = Math.sqrt(
+                        Math.pow(enemy.x - tower.x, 2) + Math.pow(enemy.y - tower.y, 2)
+                    );
+                    
+                    if (distance < closestDistance) {
+                        closestDistance = distance;
+                        target = enemy;
+                    }
+                });
+                
+                if (target) {
+                    tower.lastShot = now;
+                    tower.target = target;
+                    
+                    createProjectile(tower, target, damage);
+                    playSound(1000 + Math.random() * 200, 0.1);
+                }
+            });
+        }
+
+        function createProjectile(tower, target, damage) {
+            const projectile = {
+                id: Date.now() + Math.random(),
+                x: tower.x,
+                y: tower.y,
+                targetX: target.x,
+                targetY: target.y,
+                target: target,
+                damage: damage,
+                type: tower.type,
+                speed: 5 * gameState.gameSpeed
+            };
+            
+            gameState.projectiles.push(projectile);
+            
+            const projectileElement = document.createElement('div');
+            if (tower.type === 'arrow') {
+                projectileElement.className = 'arrow-projectile';
+            } else if (tower.type === 'fireball') {
+                projectileElement.className = 'fireball-projectile';
+            } else {
+                projectileElement.className = `projectile ${towerTypes[tower.type].projectileType}`;
+            }
+            
+            projectileElement.dataset.projectileId = projectile.id;
+            projectileElement.style.left = projectile.x + 'px';
+            projectileElement.style.top = projectile.y + 'px';
+            
+            document.getElementById('gameBoard').appendChild(projectileElement);
+        }
+
+        function updateProjectiles() {
+            gameState.projectiles.forEach(projectile => {
+                const dx = projectile.targetX - projectile.x;
+                const dy = projectile.targetY - projectile.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                if (distance < projectile.speed) {
+                    if (projectile.type === 'fireball') {
+                        const areaRadius = towerTypes.fireball.areaRadius;
+                        gameState.enemies.forEach(enemy => {
+                            const enemyDistance = Math.sqrt(
+                                Math.pow(enemy.x - projectile.targetX, 2) + 
+                                Math.pow(enemy.y - projectile.targetY, 2)
+                            );
+                            if (enemyDistance <= areaRadius) {
+                                hitEnemy(enemy, projectile.damage * (1 - enemyDistance / areaRadius), enemy.x, enemy.y);
+                            }
+                        });
+                        createExplosion(projectile.targetX, projectile.targetY);
+                    } else {
+                        hitEnemy(projectile.target, projectile.damage, projectile.x, projectile.y);
+                    }
+                    removeProjectile(projectile);
+                } else {
+                    const ratio = projectile.speed / distance;
+                    projectile.x += dx * ratio;
+                    projectile.y += dy * ratio;
+                    
+                    const projectileElement = document.querySelector(`[data-projectile-id="${projectile.id}"]`);
+                    if (projectileElement) {
+                        projectileElement.style.left = projectile.x + 'px';
+                        projectileElement.style.top = projectile.y + 'px';
+                    }
+                }
+            });
+        }
+
+        function hitEnemy(enemy, damage, x, y) {
+            enemy.hp -= Math.round(damage);
+            
+            showDamageText(Math.round(damage), x, y);
+            
+            if (enemy.hp <= 0) {
+                gameState.gold += enemyTypes[enemy.type].reward;
+                removeEnemy(enemy);
+                playSound(800, 0.2);
+                createExplosion(x, y);
+            }
+        }
+
+        function showDamageText(damage, x, y) {
+            const damageText = document.createElement('div');
+            damageText.className = 'damage-text';
+            damageText.textContent = damage;
+            damageText.style.left = x + 'px';
+            damageText.style.top = y + 'px';
+            
+            document.getElementById('gameBoard').appendChild(damageText);
+            
+            setTimeout(() => damageText.remove(), 1000);
+        }
+
+        function createExplosion(x, y) {
+            const explosion = document.createElement('div');
+            explosion.className = 'explosion';
+            explosion.style.left = (x - 25) + 'px';
+            explosion.style.top = (y - 25) + 'px';
+            
+            document.getElementById('gameBoard').appendChild(explosion);
+            
+            setTimeout(() => explosion.remove(), 500);
+        }
+
+        function removeEnemy(enemy) {
+            const index = gameState.enemies.indexOf(enemy);
+            if (index > -1) {
+                gameState.enemies.splice(index, 1);
+            }
+            
+            const enemyElement = document.querySelector(`[data-enemy-id="${enemy.id}"]`);
+            if (enemyElement) {
+                enemyElement.remove();
+            }
+        }
+
+        function removeProjectile(projectile) {
+            const index = gameState.projectiles.indexOf(projectile);
+            if (index > -1) {
+                gameState.projectiles.splice(index, 1);
+            }
+            
+            const projectileElement = document.querySelector(`[data-projectile-id="${projectile.id}"]`);
+            if (projectileElement) {
+                projectileElement.remove();
+            }
+        }
+
+        function usePowerUp(type) {
+            if (gameState.powerUps[type].cooldown > 0) return;
+            
+            if (type === 'fireball') {
+                gameState.enemies.forEach(enemy => {
+                    hitEnemy(enemy, 50, enemy.x, enemy.y);
+                });
+                gameState.powerUps.fireball.cooldown = gameState.powerUps.fireball.maxCooldown;
+                playSound(300, 0.8, 'square');
+            } else if (type === 'magicStrike') {
+                const sortedEnemies = [...gameState.enemies].sort((a, b) => b.hp - a.hp);
+                sortedEnemies.slice(0, 3).forEach(enemy => {
+                    hitEnemy(enemy, 80, enemy.x, enemy.y);
+                });
+                gameState.powerUps.magicStrike.cooldown = gameState.powerUps.magicStrike.maxCooldown;
+                playSound(1200, 0.5, 'sawtooth');
+            }
+        }
+
+        function updatePowerUps() {
+            Object.keys(gameState.powerUps).forEach(type => {
+                if (gameState.powerUps[type].cooldown > 0) {
+                    gameState.powerUps[type].cooldown -= 16 * gameState.gameSpeed;
+                    
+                    const button = document.getElementById(type + 'Btn');
+                    const cooldownOverlay = document.getElementById(type + 'Cooldown');
+                    const timeSpan = document.getElementById(type + 'Time');
+                    
+                    if (gameState.powerUps[type].cooldown > 0) {
+                        button.disabled = true;
+                        cooldownOverlay.style.display = 'flex';
+                        timeSpan.textContent = Math.ceil(gameState.powerUps[type].cooldown / 1000);
+                    } else {
+                        button.disabled = false;
+                        cooldownOverlay.style.display = 'none';
+                    }
+                }
+            });
+        }
+
+        function checkWaveComplete() {
+            if (gameState.enemies.length === 0 && gameState.waveInProgress) {
+                gameState.waveInProgress = false;
+                document.getElementById('startWaveBtn').disabled = false;
+                
+                const currentLevelData = levels[gameState.currentLevel - 1];
+                if (gameState.currentWave >= currentLevelData.waves.length) {
+                    levelComplete();
+                } else {
+                    gameState.currentWave++;
+                    playSound(600, 1, 'triangle');
+                }
+                
+                updateUI();
+            }
+        }
+
+        function levelComplete() {
+            const currentLevelData = levels[gameState.currentLevel - 1];
+            
+            if (gameState.gameMode === 'story') {
+                document.getElementById('levelComplete').style.display = 'flex';
+                
+                if (gameState.currentLevel < levels.length) {
+                    const nextLevelData = levels[gameState.currentLevel];
+                    let chapterInfo = "";
+                    if (gameState.currentLevel >= 10) {
+                        chapterInfo = "<em>🌌 THE ABYSAL CHRONICLES</em><br>";
+                    }
+                    
+                    document.getElementById('levelCompleteText').innerHTML = 
+                        `<strong>${currentLevelData.name} - Complete!</strong><br><br>` +
+                        `You've earned ${gameState.gold} gold and pushed back the darkness!<br><br>` +
+                        chapterInfo +
+                        `<em>Next: ${nextLevelData.name}</em><br>` +
+                        `${nextLevelData.story}`;
+                } else {
+                    document.getElementById('levelCompleteText').innerHTML = 
+                        `<strong>🎉 REALITY IS SAVED! 🎉</strong><br><br>` +
+                        `You have defeated The Void Itself and preserved all existence!<br>` +
+                        `The mystical realm of Aethermoor and all dimensions are safe!<br><br>` +
+                        `<em>You are truly the Ultimate Arcane Guardian!</em>`;
+                }
+            } else {
+                document.getElementById('levelComplete').style.display = 'flex';
+                document.getElementById('levelCompleteText').textContent = 
+                    `Level ${gameState.currentLevel} conquered! You've earned ${gameState.gold} gold and saved the realm from darkness.`;
+            }
+            
+            playSound(800, 2, 'sine');
+        }
+
+        function nextLevel() {
+            document.getElementById('levelComplete').style.display = 'none';
+            gameState.currentLevel++;
+            
+            if (gameState.currentLevel > levels.length) {
+                if (gameState.gameMode === 'story') {
+                    alert('🎉 ULTIMATE VICTORY, ARCANE GUARDIAN! 🎉\n\n' +
+                          '✨ THE GREATEST TOWER DEFENSE SAGA COMPLETE! ✨\n\n' +
+                          '🏆 All 20 Epic Levels Conquered!\n' +
+                          '⚔️ Every Dark Force Vanquished!\n' +
+                          '🌌 Reality Itself Saved from The Void!\n' +
+                          '🧙‍♂️ You Are Now a Legendary Master Guardian!\n\n' +
+                          '📚 THE ABYSAL CHRONICLES - COMPLETE:\n' +
+                          '• Conquered 10 levels of escalating darkness\n' +
+                          '• Survived 10 levels of cosmic horror\n' +
+                          '• Defeated The Void Itself in the ultimate battle\n\n' +
+                          '🎯 You have achieved the impossible!\n' +
+                          'Your legend will echo through all dimensions!\n\n' +
+                          'Thank you for playing the Epic 20-Level Campaign!');
+                } else {
+                    alert('🎉 Congratulations! You have saved the entire realm!');
+                }
+                returnToMenu();
+                return;
+            }
+            
+            const bonusGold = 50 + (gameState.currentLevel * 10);
+            gameState.gold += bonusGold;
+            initializeLevel();
+        }
+
+        function gameOver() {
+            document.getElementById('gameOver').style.display = 'flex';
+            document.getElementById('gameOverText').textContent = 
+                `The dark forces have overwhelmed your defenses. Wave ${gameState.currentWave} of Level ${gameState.currentLevel} proved too powerful...`;
+            playSound(200, 3, 'square');
+        }
+
+        function restartLevel() {
+            document.getElementById('gameOver').style.display = 'none';
+            gameState.gold = 100;
+            gameState.lives = 20;
+            initializeLevel();
+        }
+
+        function returnToMenu() {
+            document.getElementById('gameArea').style.display = 'none';
+            document.getElementById('levelComplete').style.display = 'none';
+            document.getElementById('gameOver').style.display = 'none';
+            document.getElementById('mainMenu').style.display = 'flex';
+            
+            gameState = {
+                gold: 100,
+                lives: 20,
+                currentWave: 1,
+                currentLevel: 1,
+                selectedTower: null,
+                towers: [],
+                enemies: [],
+                projectiles: [],
+                gameMode: 'single',
+                isPaused: false,
+                waveInProgress: false,
+                gameSpeed: 1,
+                powerUps: {
+                    fireball: { cooldown: 0, maxCooldown: 15000 },
+                    magicStrike: { cooldown: 0, maxCooldown: 20000 }
+                }
+            };
+            
+            if (backgroundMusic) {
+                try {
+                    backgroundMusic.base.stop();
+                    backgroundMusic.melody.stop();
+                } catch (e) {}
+                backgroundMusic = null;
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('gold').textContent = gameState.gold;
+            document.getElementById('lives').textContent = gameState.lives;
+            document.getElementById('currentWave').textContent = gameState.currentWave;
+            
+            if (gameState.gameMode === 'story' && gameState.currentLevel <= levels.length) {
+                const levelData = levels[gameState.currentLevel - 1];
+                document.getElementById('currentLevel').textContent = `${gameState.currentLevel}: ${levelData.name}`;
+            } else {
+                document.getElementById('currentLevel').textContent = gameState.currentLevel;
+            }
+            
+            document.querySelectorAll('.tower-buy-btn').forEach(btn => {
+                const cost = parseInt(btn.dataset.cost);
+                btn.disabled = gameState.gold < cost;
+            });
+        }
+
+        function gameLoop() {
+            if (document.getElementById('gameArea').style.display === 'none') return;
+            
+            updateEnemies();
+            updateTowers();
+            updateProjectiles();
+            updatePowerUps();
+            checkWaveComplete();
+            updateUI();
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize on page load
+        updateUI();
+    </script>
+</body>
+</html>

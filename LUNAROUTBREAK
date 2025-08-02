@@ -1,0 +1,1957 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>Lunar Outbreak</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #001122;
+            color: white;
+            font-family: monospace;
+            overflow: hidden;
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            height: calc(var(--vh, 1vh) * 100);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        canvas {
+            border: 1px solid #333;
+            background: linear-gradient(180deg, #001122 0%, #112233 100%);
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        
+        #menuUI {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(0,0,0,0.95);
+            padding: 60px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid #00DDFF;
+            box-shadow: 0 0 20px rgba(0, 221, 255, 0.5);
+        }
+        
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        
+        #controls {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            z-index: 100;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+        
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #45a049;
+        }
+        
+        button:disabled {
+            background: #666;
+            cursor: not-allowed;
+        }
+        
+        .menu-button {
+            font-size: 24px !important;
+            padding: 20px 40px !important;
+            background: #2196F3 !important;
+            border: 2px solid #FFF;
+        }
+        
+        .menu-button:hover {
+            background: #1976D2 !important;
+            transform: scale(1.05);
+        }
+
+        /* Mobile Touch Controls */
+        #touchControls {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 200;
+            display: none;
+            flex-direction: row;
+            gap: 20px;
+            align-items: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.8);
+            border-radius: 15px;
+            border: 2px solid #00DDFF;
+        }
+
+        .touch-button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #00DDFF;
+            background: rgba(0, 221, 255, 0.2);
+            color: #00DDFF;
+            font-size: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+            touch-action: manipulation;
+            transition: all 0.1s ease;
+        }
+
+        .touch-button:active {
+            background: rgba(0, 221, 255, 0.5);
+            transform: scale(0.95);
+            box-shadow: 0 0 20px rgba(0, 221, 255, 0.8);
+        }
+
+        .touch-button.jump {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: #4CAF50;
+            color: #4CAF50;
+            width: 100px;
+            height: 100px;
+            font-size: 24px;
+        }
+
+        .touch-button.jump:active {
+            background: rgba(76, 175, 80, 0.6);
+            box-shadow: 0 0 20px rgba(76, 175, 80, 0.8);
+        }
+
+        .touch-button.gravity {
+            background: rgba(255, 107, 107, 0.3);
+            border-color: #FF6B6B;
+            color: #FF6B6B;
+        }
+
+        .touch-button.gravity:active {
+            background: rgba(255, 107, 107, 0.6);
+            box-shadow: 0 0 20px rgba(255, 107, 107, 0.8);
+        }
+
+        /* Mobile UI Adjustments */
+        @media screen and (max-width: 768px) {
+            #ui {
+                font-size: 14px;
+                padding: 8px;
+                top: 5px;
+                left: 5px;
+            }
+
+            #controls {
+                font-size: 10px;
+                padding: 8px;
+                bottom: 120px;
+                left: 5px;
+                max-width: calc(100vw - 20px);
+            }
+
+            #menuUI {
+                padding: 30px;
+                width: 90vw;
+                max-width: 400px;
+                box-sizing: border-box;
+            }
+
+            #menuUI h1 {
+                font-size: 28px !important;
+                margin-bottom: 20px !important;
+            }
+
+            .menu-button {
+                font-size: 18px !important;
+                padding: 15px 30px !important;
+                width: 100%;
+                max-width: 280px;
+            }
+
+            #shopUI {
+                width: 95vw;
+                max-width: 450px;
+                padding: 20px;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-sizing: border-box;
+            }
+
+            #shopUI h2 {
+                font-size: 20px;
+            }
+
+            #shopUI button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+
+            button {
+                font-size: 14px;
+                padding: 8px 16px;
+            }
+
+            #touchControls {
+                display: flex;
+            }
+        }
+
+        /* Landscape mobile adjustments */
+        @media screen and (max-height: 500px) and (orientation: landscape) {
+            #touchControls {
+                bottom: 10px;
+                gap: 15px;
+                padding: 8px;
+            }
+
+            .touch-button {
+                width: 60px;
+                height: 60px;
+                font-size: 16px;
+            }
+
+            .touch-button.jump {
+                width: 80px;
+                height: 80px;
+                font-size: 20px;
+            }
+
+            #controls {
+                bottom: 80px;
+                font-size: 9px;
+            }
+        }
+
+        /* Prevent text selection and zoom on mobile */
+        * {
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            -khtml-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        input, textarea {
+            -webkit-user-select: text;
+            -moz-user-select: text;
+            -ms-user-select: text;
+            user-select: text;
+        }
+    </style>
+</head>
+<body>
+    <div id="gameContainer">
+        <canvas id="gameCanvas"></canvas>
+        
+        <div id="ui">
+            <div id="menuUI">
+                <h1 style="color: #00DDFF; margin-bottom: 40px; font-size: 36px;">LUNAR OUTBREAK</h1>
+                <button class="menu-button" onclick="startGame()">START CAMPAIGN</button>
+                <div style="margin-top: 30px; color: #FFF; font-size: 18px;">
+                    <div>Complete 10 increasingly difficult levels</div>
+                    <div style="margin-top: 10px;">Survive the Lunar Outbreak!</div>
+                    <div style="margin-top: 15px; color: #FFD700;">💰 Lunar Coins: <span id="totalCoins">300</span></div>
+                </div>
+            </div>
+            
+            <div id="gameUI" style="display: none;">
+                <div>Health: <span id="health">100</span></div>
+                <div id="fuelDisplay">🚀 No Jetpack - Visit Shop</div>
+                <div>Level: <span id="level">1</span> - <span id="levelName">Lunar Surface</span></div>
+                <div>Progress: <span id="levelProgress">0</span>/<span id="levelDuration">150</span>s</div>
+                <div>Score: <span id="score">0</span></div>
+                <div style="color: #FFD700;">💰 Lunar Coins: <span id="lunarCoins">0</span></div>
+                <div id="exoskeletonStatus" style="color: #FF6B6B; display: none;">🛡️ EXOSKELETON ACTIVE</div>
+                <div id="aiAssistStatus" style="color: #00FFFF; display: none;">🤖 AI CO-PILOT ACTIVE</div>
+                <button onclick="backToMenu()">Back to Menu</button>
+                <button onclick="toggleShop()" style="background: #FFD700; color: #000;">SHOP</button>
+            </div>
+            
+            <div id="shopUI" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1001; background: rgba(0,0,0,0.95); padding: 40px; border-radius: 15px; border: 3px solid #FFD700;">
+                <h2 style="color: #FFD700; text-align: center; margin-bottom: 20px;">LUNAR SHOP</h2>
+                <div style="color: #FFD700; text-align: center; margin-bottom: 20px;">💰 Lunar Coins: <span id="shopCoins">300</span></div>
+                
+                <div style="margin-bottom: 15px; color: #FFF;">
+                    <strong>🚀 Jetpack <span id="jetpackStatus">LOCKED</span></strong><br>
+                    <span style="color: #AAA;" id="jetpackDescription">Essential for aerial mobility & survival</span><br>
+                    <button id="upgradeJetpack" onclick="buyUpgrade('jetpack')">Purchase (100 LC)</button>
+                </div>
+                
+                <div style="margin-bottom: 15px; color: #FFF;">
+                    <strong>Health Level <span id="healthLevel">1</span></strong><br>
+                    <span style="color: #AAA;">+25 max health</span><br>
+                    <button id="upgradeHealth" onclick="buyUpgrade('health')">Upgrade (75 LC)</button>
+                </div>
+                
+                <div style="margin-bottom: 15px; color: #FFF;">
+                    <strong>Weapon Level <span id="weaponLevel">1</span></strong><br>
+                    <span style="color: #AAA;">+10px ground pound range</span><br>
+                    <button id="upgradeWeapon" onclick="buyUpgrade('weapon')">Upgrade (100 LC)</button>
+                </div>
+                
+                <div style="margin-bottom: 15px; color: #FFF; padding: 10px; border: 2px solid #FF6B6B; border-radius: 8px; background: rgba(255, 107, 107, 0.1);">
+                    <strong>🛡️ Combat Exoskeleton <span id="exoskeletonStatus2">LOCKED</span></strong><br>
+                    <span style="color: #AAA;">+50% damage resistance, +30% speed, enhanced ground pound</span><br>
+                    <button id="upgradeExoskeleton" onclick="buyUpgrade('exoskeleton')">Purchase (500 LC)</button>
+                </div>
+                
+                <div style="margin-bottom: 15px; color: #FFF; padding: 10px; border: 2px solid #00FFFF; border-radius: 8px; background: rgba(0, 255, 255, 0.1);">
+                    <strong>🤖 AI Co-Pilot <span id="aiStatus">LOCKED</span></strong><br>
+                    <span style="color: #AAA;">Auto-dodge, smart targeting, jetpack optimization</span><br>
+                    <button id="upgradeAI" onclick="buyUpgrade('ai')">Purchase (200 LC)</button>
+                </div>
+                
+                <button onclick="toggleShop()" style="width: 100%; background: #666;">Close Shop</button>
+            </div>
+        </div>
+        
+        <div id="controls">
+            <strong>CONTROLS:</strong><br>
+            W/↑/SPACE - Jump | S/↓ - <strong>HYPER GRAVITY BOOTS</strong><br>
+            R - Restart | 1 - Start | 0 - Menu<br>
+            <em>💰 EARN COINS: Ground Pound + Aerial kills + ☆ Sky Coins!</em><br>
+            <em>☆ SKY COINS: High-value coins in the upper atmosphere - jetpack required!</em><br>
+            <em>🧟 ZOMBIE JETPACKS: Purple zombies with malfunctioning jetpacks - chaotic & unpredictable!</em><br>
+            <em>🎯 Red=Aggressive, Cyan=Evasive, Gold=Hunter, Gray=Tank, Z=Zombie</em>
+        </div>
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="touchControls">
+        <div class="touch-button gravity" id="gravityBtn">⬇<br>BOOT</div>
+        <div class="touch-button jump" id="jumpBtn">🚀<br>JUMP</div>
+        <div class="touch-button" id="restartBtn">🔄<br>RST</div>
+        <div class="touch-button" id="menuBtn">📱<br>MENU</div>
+    </div>
+
+    <script>
+        console.log("Lunar Outbreak starting...");
+        
+        // Mobile detection
+        function isMobileDevice() {
+            return (typeof window.orientation !== "undefined") || (navigator.userAgent.indexOf('IEMobile') !== -1) || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        }
+
+        // Show/hide touch controls based on device
+        function updateTouchControlsVisibility() {
+            const touchControls = document.getElementById('touchControls');
+            const controls = document.getElementById('controls');
+            
+            if (isMobileDevice()) {
+                if (gameState.gameMode === 'campaign') {
+                    touchControls.style.display = 'flex';
+                } else {
+                    touchControls.style.display = 'none';
+                }
+                // Update controls text for mobile
+                controls.innerHTML = `
+                    <strong>MOBILE CONTROLS:</strong><br>
+                    🚀 JUMP - Tap jump button or swipe up<br>
+                    ⬇ GRAVITY BOOTS - Hold boot button or swipe down<br>
+                    💰 EARN COINS: Ground Pound + Aerial kills + ☆ Sky Coins!<br>
+                    <em>☆ SKY COINS: High-value coins - jetpack required!</em><br>
+                    <em>🧟 ZOMBIE JETPACKS: Chaotic purple zombies!</em><br>
+                    <em>🎯 Red=Aggressive, Cyan=Evasive, Gold=Hunter, Gray=Tank</em>
+                `;
+            } else {
+                touchControls.style.display = 'none';
+                // Keep original controls text for desktop
+                controls.innerHTML = `
+                    <strong>CONTROLS:</strong><br>
+                    W/↑/SPACE - Jump | S/↓ - <strong>HYPER GRAVITY BOOTS</strong><br>
+                    R - Restart | 1 - Start | 0 - Menu<br>
+                    <em>💰 EARN COINS: Ground Pound + Aerial kills + ☆ Sky Coins!</em><br>
+                    <em>☆ SKY COINS: High-value coins in the upper atmosphere - jetpack required!</em><br>
+                    <em>🧟 ZOMBIE JETPACKS: Purple zombies with malfunctioning jetpacks - chaotic & unpredictable!</em><br>
+                    <em>🎯 Red=Aggressive, Cyan=Evasive, Gold=Hunter, Gray=Tank, Z=Zombie</em>
+                `;
+            }
+        }
+        
+        // Game constants
+        const GRAVITY = 0.15;
+        const JUMP_POWER = 8;
+        const JETPACK_POWER = 0.165;
+        const BASE_SPEED = 2;
+        
+        // Level configurations
+        const LEVELS = [
+            { duration: 150, enemySpawnRate: 3000, speedMultiplier: 1.0, name: "Lunar Surface" },
+            { duration: 150, enemySpawnRate: 2400, speedMultiplier: 1.2, name: "Mining Sector" }, // Zombies appear
+            { duration: 150, enemySpawnRate: 2000, speedMultiplier: 1.4, name: "Research Lab" },
+            { duration: 150, enemySpawnRate: 1700, speedMultiplier: 1.6, name: "Power Core" }, // More zombies
+            { duration: 150, enemySpawnRate: 1500, speedMultiplier: 1.8, name: "Command Center" },
+            { duration: 150, enemySpawnRate: 1300, speedMultiplier: 2.0, name: "Reactor Zone" }, // Sky zombie infestation
+            { duration: 150, enemySpawnRate: 1100, speedMultiplier: 2.2, name: "Emergency Bay" },
+            { duration: 150, enemySpawnRate: 900, speedMultiplier: 2.4, name: "Quarantine" }, // Zombie apocalypse
+            { duration: 150, enemySpawnRate: 750, speedMultiplier: 2.6, name: "The Hive" },
+            { duration: 150, enemySpawnRate: 600, speedMultiplier: 3.0, name: "Patient Zero" } // Maximum chaos
+        ];
+
+        const ENEMY_TYPES = [
+            { width: 36, height: 50, speed: 2, color: '#FF6B6B', points: 10, coins: 5, ai: 'aggressive' },
+            { width: 40, height: 56, speed: 2.5, color: '#4ECDC4', points: 15, coins: 8, flying: true, ai: 'evasive' },
+            { width: 32, height: 44, speed: 3, color: '#45B7D1', points: 12, coins: 6, ai: 'hunter' },
+            { width: 50, height: 70, speed: 1.5, color: '#96CEB4', points: 25, coins: 12, ai: 'tank' },
+            // Zombie jetpack variants - chaotic and unpredictable!
+            { width: 38, height: 52, speed: 3, color: '#9B59B6', points: 18, coins: 10, flying: true, ai: 'zombie_jetpack', zombie: true },
+            { width: 34, height: 48, speed: 2.8, color: '#E74C3C', points: 16, coins: 9, flying: true, ai: 'zombie_jetpack', zombie: true },
+            { width: 42, height: 58, speed: 2.2, color: '#F39C12', points: 20, coins: 12, flying: true, ai: 'zombie_jetpack', zombie: true }
+        ];
+
+        // Canvas setup
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            
+            // Mobile-specific adjustments
+            if (isMobileDevice()) {
+                // Account for mobile browser UI
+                const vh = window.innerHeight * 0.01;
+                document.documentElement.style.setProperty('--vh', `${vh}px`);
+                
+                // Adjust canvas for mobile browsers
+                canvas.style.width = '100vw';
+                canvas.style.height = '100vh';
+                
+                // Handle orientation changes
+                setTimeout(() => {
+                    canvas.width = window.innerWidth;
+                    canvas.height = window.innerHeight;
+                    updateTouchControlsVisibility();
+                }, 100);
+            }
+            
+            console.log("Canvas resized to:", canvas.width, "x", canvas.height);
+        }
+        resizeCanvas();
+        window.addEventListener('resize', resizeCanvas);
+        
+        // Handle orientation changes on mobile
+        if (isMobileDevice()) {
+            window.addEventListener('orientationchange', () => {
+                setTimeout(resizeCanvas, 100);
+            });
+        }
+
+        // Game state
+        let gameState = {
+            player: {
+                x: 150, y: 400, width: 40, height: 60,
+                vy: 0, onGround: false, hyperGravityActive: false,
+                jumpReleased: true, usingJetpack: false, maxHeight: 400,
+                health: 100, maxHealth: 100,
+                jetpackFuel: 0, maxJetpackFuel: 0,
+                jetpackLevel: 0, healthLevel: 1, weaponLevel: 1,
+                hasExoskeleton: false, exoskeletonShieldRecharge: 0,
+                // AI Assistant features
+                aiAssist: false, aiDodgeActive: false, aiTargeting: false, aiSkyCoinAssist: false
+            },
+            camera: { x: 0, y: 0 },
+            screenShake: { active: false, intensity: 0, duration: 0 },
+            enemies: [], fuelPickups: [], coinPickups: [], // Sky coins for aerial skill challenges!
+            score: 0, lunarCoins: 0, totalCoins: 300, // More starting coins for skill-based economy
+            currentLevel: 1, levelProgress: 0,
+            levelComplete: false, gameComplete: false,
+            keys: {}, gameMode: 'menu',
+            gameTime: 0, gameStartTime: 0,
+            lastEnemySpawn: 0, lastFuelSpawn: 0, lastCoinSpawn: 0
+        };
+
+        console.log("Game state initialized:", gameState.gameMode);
+
+        // Game functions
+        function startGame() {
+            console.log("Starting game...");
+            gameState.gameMode = 'campaign';
+            gameState.currentLevel = 1;
+            gameState.levelComplete = false;
+            gameState.gameComplete = false;
+            resetPlayer();
+            document.getElementById('menuUI').style.display = 'none';
+            document.getElementById('gameUI').style.display = 'block';
+            document.getElementById('shopUI').style.display = 'none';
+            updateTouchControlsVisibility();
+            console.log("Game started, mode:", gameState.gameMode);
+        }
+
+        function backToMenu() {
+            console.log("Back to menu...");
+            gameState.gameMode = 'menu';
+            gameState.totalCoins += gameState.lunarCoins;
+            gameState.lunarCoins = 0;
+            document.getElementById('menuUI').style.display = 'block';
+            document.getElementById('gameUI').style.display = 'none';
+            document.getElementById('shopUI').style.display = 'none';
+            updateTouchControlsVisibility();
+            updateUI();
+        }
+
+        function restartLevel() {
+            console.log("Restarting level...");
+            startGame();
+        }
+
+        function resetPlayer() {
+            gameState.player.health = gameState.player.maxHealth;
+            gameState.player.x = 150;
+            gameState.player.y = 400;
+            gameState.player.vy = 0;
+            gameState.player.hyperGravityActive = false;
+            gameState.player.jumpReleased = true;
+            gameState.player.usingJetpack = false;
+            gameState.player.maxHeight = 400;
+            gameState.player.jetpackFuel = gameState.player.jetpackLevel > 0 ? gameState.player.maxJetpackFuel : 0;
+            gameState.player.exoskeletonShieldRecharge = 0;
+            
+            gameState.enemies = [];
+            gameState.fuelPickups = [];
+            gameState.coinPickups = []; // Sky coins for aerial challenges
+            gameState.camera.x = 0;
+            gameState.score = 0;
+            gameState.levelProgress = 0;
+            gameState.gameTime = 0;
+            gameState.gameStartTime = 0;
+            gameState.lastEnemySpawn = 0;
+            gameState.lastFuelSpawn = 0;
+            gameState.lastCoinSpawn = 0;
+            gameState.screenShake = { active: false, intensity: 0, duration: 0 };
+        }
+
+        // Shop system
+        function toggleShop() {
+            const shopUI = document.getElementById('shopUI');
+            const isOpen = shopUI.style.display !== 'none';
+            shopUI.style.display = isOpen ? 'none' : 'block';
+            if (!isOpen) {
+                updateShopUI();
+            }
+        }
+
+        function buyUpgrade(type) {
+            console.log("Buying upgrade:", type);
+            const costs = {
+                jetpack: gameState.player.jetpackLevel === 0 ? 100 : 50 * gameState.player.jetpackLevel,
+                health: 75 * gameState.player.healthLevel,
+                weapon: 100 * gameState.player.weaponLevel,
+                exoskeleton: 500,
+                ai: 200
+            };
+
+            const cost = costs[type];
+            if (gameState.totalCoins >= cost) {
+                gameState.totalCoins -= cost;
+                
+                switch(type) {
+                    case 'jetpack':
+                        gameState.player.jetpackLevel++;
+                        if (gameState.player.jetpackLevel === 1) {
+                            gameState.player.maxJetpackFuel = 100;
+                        } else {
+                            gameState.player.maxJetpackFuel += 25;
+                        }
+                        gameState.player.jetpackFuel = gameState.player.maxJetpackFuel;
+                        break;
+                    case 'health':
+                        gameState.player.healthLevel++;
+                        gameState.player.maxHealth += 25;
+                        gameState.player.health = gameState.player.maxHealth;
+                        break;
+                    case 'weapon':
+                        gameState.player.weaponLevel++;
+                        break;
+                    case 'exoskeleton':
+                        gameState.player.hasExoskeleton = true;
+                        gameState.player.maxHealth += 50;
+                        gameState.player.health = gameState.player.maxHealth;
+                        break;
+                    case 'ai':
+                        gameState.player.aiAssist = true;
+                        break;
+                }
+                updateShopUI();
+                updateUI();
+                console.log("Upgrade purchased:", type, "Remaining coins:", gameState.totalCoins);
+            }
+        }
+
+        function updateShopUI() {
+            document.getElementById('shopCoins').textContent = gameState.totalCoins;
+            
+            const healthCost = 75 * gameState.player.healthLevel;
+            const weaponCost = 100 * gameState.player.weaponLevel;
+
+            const healthBtn = document.getElementById('upgradeHealth');
+            const weaponBtn = document.getElementById('upgradeWeapon');
+            const jetpackBtn = document.getElementById('upgradeJetpack');
+
+            // Update jetpack UI based on ownership
+            const jetpackStatus = document.getElementById('jetpackStatus');
+            const jetpackDescription = document.getElementById('jetpackDescription');
+            
+            if (gameState.player.jetpackLevel === 0) {
+                jetpackStatus.textContent = 'LOCKED';
+                jetpackStatus.style.color = '#FF6B6B';
+                jetpackDescription.textContent = 'Essential for aerial mobility & survival';
+                jetpackBtn.textContent = 'Purchase (100 LC)';
+                jetpackBtn.disabled = gameState.totalCoins < 100;
+            } else {
+                jetpackStatus.textContent = `Level ${gameState.player.jetpackLevel}`;
+                jetpackStatus.style.color = '#00FF00';
+                jetpackDescription.textContent = '+25 fuel capacity & faster recharge';
+                const jetpackCost = 50 * gameState.player.jetpackLevel;
+                jetpackBtn.textContent = `Upgrade (${jetpackCost} LC)`;
+                jetpackBtn.disabled = gameState.totalCoins < jetpackCost;
+            }
+            
+            document.getElementById('healthLevel').textContent = gameState.player.healthLevel;
+            document.getElementById('weaponLevel').textContent = gameState.player.weaponLevel;
+            
+            healthBtn.textContent = `Upgrade (${healthCost} LC)`;
+            healthBtn.disabled = gameState.totalCoins < healthCost;
+            
+            weaponBtn.textContent = `Upgrade (${weaponCost} LC)`;
+            weaponBtn.disabled = gameState.totalCoins < weaponCost;
+
+            // Update exoskeleton UI
+            const exoskeletonStatus = document.getElementById('exoskeletonStatus2');
+            const exoskeletonBtn = document.getElementById('upgradeExoskeleton');
+            if (gameState.player.hasExoskeleton) {
+                exoskeletonStatus.textContent = 'EQUIPPED';
+                exoskeletonStatus.style.color = '#00FF00';
+                exoskeletonBtn.textContent = 'PURCHASED';
+                exoskeletonBtn.disabled = true;
+            } else {
+                exoskeletonStatus.textContent = 'LOCKED';
+                exoskeletonStatus.style.color = '#FF6B6B';
+                exoskeletonBtn.textContent = 'Purchase (500 LC)';
+                exoskeletonBtn.disabled = gameState.totalCoins < 500;
+            }
+
+            // Update AI UI
+            const aiStatus = document.getElementById('aiStatus');
+            const aiBtn = document.getElementById('upgradeAI');
+            if (gameState.player.aiAssist) {
+                aiStatus.textContent = 'ACTIVE';
+                aiStatus.style.color = '#00FF00';
+                aiBtn.textContent = 'PURCHASED';
+                aiBtn.disabled = true;
+            } else {
+                aiStatus.textContent = 'LOCKED';
+                aiStatus.style.color = '#FF6B6B';
+                aiBtn.textContent = 'Purchase (200 LC)';
+                aiBtn.disabled = gameState.totalCoins < 200;
+            }
+        }
+
+        // Physics and player controls
+        function updatePlayer() {
+            if (gameState.gameMode === 'menu') return;
+            
+            const player = gameState.player;
+            
+            // Apply AI assistance before processing input
+            updateAstronautAI();
+            
+            const jumpPressed = gameState.keys.w || gameState.keys.arrowup || gameState.keys[' '];
+            
+            // Hyper Gravity Boots
+            player.hyperGravityActive = gameState.keys.s || gameState.keys.arrowdown;
+            
+            // Jump button tracking
+            if (!jumpPressed) {
+                player.jumpReleased = true;
+                player.usingJetpack = false;
+            }
+            
+            // Jumping and jetpack
+            if (jumpPressed && player.onGround) {
+                const jumpPower = player.hasExoskeleton ? JUMP_POWER * 1.2 : JUMP_POWER;
+                player.vy = -jumpPower;
+                player.onGround = false;
+                player.jumpReleased = false;
+                player.usingJetpack = false;
+                player.maxHeight = player.y;
+            } else if (jumpPressed && !player.onGround && player.jumpReleased && player.jetpackLevel > 0 && player.jetpackFuel > 0) {
+                player.vy -= JETPACK_POWER;
+                player.jetpackFuel -= 2;
+                player.jumpReleased = false;
+                player.usingJetpack = true;
+            } else if (jumpPressed && !player.onGround && player.usingJetpack && player.jetpackLevel > 0 && player.jetpackFuel > 0) {
+                player.vy -= JETPACK_POWER;
+                player.jetpackFuel -= 2;
+            }
+
+            // Gravity
+            player.vy += GRAVITY;
+            if (player.hyperGravityActive && !player.onGround) {
+                player.vy += GRAVITY * 3;
+            }
+
+            // Update position and height tracking
+            player.y += player.vy;
+            if (!player.onGround && (player.maxHeight === 0 || player.y < player.maxHeight)) {
+                player.maxHeight = player.y;
+            }
+
+            // Auto-scroll camera with exoskeleton speed boost
+            const currentLevel = LEVELS[gameState.currentLevel - 1];
+            if (currentLevel) {
+                const speedMultiplier = player.hasExoskeleton ? 1.3 : 1.0;
+                gameState.camera.x += BASE_SPEED * currentLevel.speedMultiplier * speedMultiplier;
+                player.x = gameState.camera.x + 150;
+            }
+
+            // Ground collision and ground pound
+            const groundY = canvas.height - 100;
+            if (player.y + player.height > groundY) {
+                const fallDistance = player.y - player.maxHeight;
+                
+                if (fallDistance >= 200 && player.hyperGravityActive && player.maxHeight > 0) {
+                    const baseIntensity = player.hasExoskeleton ? 12 : 8;
+                    gameState.screenShake = { active: true, intensity: baseIntensity, duration: 15 };
+                    
+                    const groundPoundRange = 60 + (gameState.player.weaponLevel - 1) * 10;
+                    const exoskeletonBonus = player.hasExoskeleton ? 30 : 0;
+                    const totalRange = groundPoundRange + exoskeletonBonus;
+                    
+                    for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                        const enemy = gameState.enemies[i];
+                        const dx = enemy.x + enemy.width/2 - (player.x + player.width/2);
+                        const dy = enemy.y + enemy.height/2 - (player.y + player.height/2);
+                        const distance = Math.sqrt(dx*dx + dy*dy);
+                        
+                        if (distance <= totalRange) {
+                            const multiplier = player.hasExoskeleton ? 3 : 2;
+                            gameState.score += enemy.points * multiplier;
+                            gameState.lunarCoins += enemy.coins * multiplier;
+                            gameState.enemies.splice(i, 1);
+                        }
+                    }
+                    
+                    const baseBonus = player.hasExoskeleton ? 200 : 100;
+                    const coinBonus = player.hasExoskeleton ? 20 : 10;
+                    gameState.score += baseBonus;
+                    gameState.lunarCoins += coinBonus;
+                }
+                
+                player.y = groundY - player.height;
+                player.vy = 0;
+                player.onGround = true;
+                player.usingJetpack = false;
+                player.maxHeight = player.y;
+            } else {
+                player.onGround = false;
+            }
+
+            // Regenerate jetpack fuel
+            if (player.jetpackLevel > 0) {
+                const regenRate = 0.5 + (gameState.player.jetpackLevel - 1) * 0.2;
+                if (player.jetpackFuel < player.maxJetpackFuel) {
+                    player.jetpackFuel += regenRate;
+                }
+            }
+
+            // Exoskeleton shield recharge
+            if (player.hasExoskeleton && player.exoskeletonShieldRecharge > 0) {
+                player.exoskeletonShieldRecharge--;
+            }
+            
+            // Clear AI keys after processing
+            if (player.aiAssist) {
+                setTimeout(() => {
+                    gameState.keys.w = false;
+                    gameState.keys.s = false;
+                }, 100);
+            }
+        }
+
+        // Enemy AI behaviors
+        function updateEnemyAI(enemy) {
+            const player = gameState.player;
+            const dx = player.x - enemy.x;
+            const dy = player.y - enemy.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            
+            switch(enemy.ai) {
+                case 'aggressive':
+                    // Charges directly at player
+                    if (distance > 100) {
+                        enemy.vx = -enemy.speed;
+                        if (Math.abs(dy) > 20) {
+                            enemy.vy = dy > 0 ? 1 : -1;
+                        }
+                    } else {
+                        enemy.vx = -enemy.speed * 1.5; // Speed up when close
+                    }
+                    break;
+                    
+                case 'evasive':
+                    // Flying enemy that tries to avoid ground pounds
+                    enemy.vx = -enemy.speed;
+                    if (player.y < enemy.y - 100 && player.hyperGravityActive) {
+                        // Player is above and using gravity boots - EVADE!
+                        enemy.vx = -enemy.speed * 2;
+                        enemy.vy = dx > 0 ? -2 : 2; // Move away from player
+                    } else {
+                        enemy.vy = Math.sin(gameState.gameTime * 0.003 + enemy.x * 0.01) * 2;
+                    }
+                    break;
+                    
+                case 'hunter':
+                    // Fast enemy that actively seeks player
+                    const seekSpeed = enemy.speed * 0.8;
+                    if (distance > 50) {
+                        enemy.vx = dx > 0 ? seekSpeed : -seekSpeed;
+                        enemy.vy = dy > 0 ? seekSpeed * 0.5 : -seekSpeed * 0.5;
+                    } else {
+                        enemy.vx = -enemy.speed * 2; // Sprint past when close
+                    }
+                    break;
+                    
+                case 'tank':
+                    // Slow but steady, slight course correction
+                    enemy.vx = -enemy.speed;
+                    if (Math.abs(dy) > 50 && distance < 200) {
+                        enemy.vy = dy > 0 ? 0.5 : -0.5;
+                    }
+                    break;
+                    
+                case 'zombie_jetpack':
+                    // Chaotic zombie with malfunctioning jetpack - they DON'T chase the player!
+                    if (!enemy.jetpackMalfunction) {
+                        enemy.jetpackMalfunction = {
+                            thrustTimer: 0,
+                            spinTimer: 0,
+                            panicMode: false,
+                            lastDirection: Math.random() > 0.5 ? 1 : -1,
+                            confusionTimer: 0,
+                            driftDirection: (Math.random() - 0.5) * 2
+                        };
+                    }
+                    
+                    const malfunction = enemy.jetpackMalfunction;
+                    malfunction.thrustTimer += 1;
+                    malfunction.spinTimer += 1;
+                    malfunction.confusionTimer += 1;
+                    
+                    // Zombies don't know where they're going - just drift randomly
+                    enemy.vx = -enemy.speed * (0.3 + Math.random() * 0.7) * malfunction.lastDirection;
+                    
+                    // Check for other zombie jetpacks nearby (they crash into each other!)
+                    const nearbyZombies = gameState.enemies.filter(other => {
+                        if (other === enemy || !other.zombie) return false;
+                        const zdx = other.x - enemy.x;
+                        const zdy = other.y - enemy.y;
+                        const zombieDistance = Math.sqrt(zdx * zdx + zdy * zdy);
+                        
+                        // Actual collision with another zombie
+                        if (zombieDistance < 30) {
+                            // Both zombies panic and bounce off each other
+                            const bounceForce = 2;
+                            enemy.vx += zdx > 0 ? -bounceForce : bounceForce;
+                            enemy.vy += zdy > 0 ? -bounceForce : bounceForce;
+                            other.vx += zdx > 0 ? bounceForce : -bounceForce;
+                            other.vy += zdy > 0 ? bounceForce : -bounceForce;
+                            
+                            // Both enter panic mode
+                            if (other.jetpackMalfunction) {
+                                other.jetpackMalfunction.panicMode = true;
+                                other.jetpackMalfunction.spinTimer = 0;
+                            }
+                            malfunction.panicMode = true;
+                            malfunction.spinTimer = 0;
+                            
+                            // Visual effect - sparks fly!
+                            gameState.screenShake = { active: true, intensity: 2, duration: 5 };
+                        }
+                        
+                        return zombieDistance < 80;
+                    });
+                    
+                    if (nearbyZombies.length > 0) {
+                        // Panic when other zombies are nearby - but still no player awareness
+                        malfunction.panicMode = true;
+                        enemy.vx += (Math.random() - 0.5) * 4;
+                        enemy.vy += (Math.random() - 0.5) * 3;
+                    }
+                    
+                    // Erratic jetpack behavior - random thrusts in random directions
+                    if (malfunction.thrustTimer > 20 + Math.random() * 40) {
+                        // Random jetpack thrust burst in completely random direction
+                        const thrustPower = 3 + Math.random() * 5;
+                        const randomDirection = Math.random() > 0.5 ? 1 : -1;
+                        enemy.vy = randomDirection * thrustPower;
+                        
+                        // Sometimes horizontal thrust too (jetpack is really broken)
+                        if (Math.random() > 0.7) {
+                            enemy.vx += (Math.random() - 0.5) * 3;
+                        }
+                        
+                        malfunction.thrustTimer = 0;
+                        malfunction.panicMode = Math.random() > 0.6;
+                    }
+                    
+                    // Panic spinning when jetpack misfires
+                    if (malfunction.panicMode) {
+                        enemy.vx += Math.sin(malfunction.spinTimer * 0.4) * 3;
+                        enemy.vy += Math.cos(malfunction.spinTimer * 0.3) * 2;
+                        if (malfunction.spinTimer > 100) {
+                            malfunction.panicMode = false;
+                            malfunction.spinTimer = 0;
+                        }
+                    }
+                    
+                    // Confusion - zombies forget what they're doing (no player awareness)
+                    if (malfunction.confusionTimer > 180 + Math.random() * 120) {
+                        // Sudden random direction change - zombie gets confused
+                        enemy.vx = (Math.random() - 0.5) * enemy.speed * 2;
+                        enemy.vy = (Math.random() - 0.5) * 4;
+                        malfunction.confusionTimer = 0;
+                        malfunction.panicMode = true;
+                        malfunction.driftDirection = (Math.random() - 0.5) * 2;
+                    }
+                    
+                    // Random drift - zombies just float around aimlessly
+                    if (Math.random() > 0.95) {
+                        malfunction.driftDirection = (Math.random() - 0.5) * 2;
+                        enemy.vy += malfunction.driftDirection;
+                    }
+                    
+                    // Random direction changes - zombies get confused more often
+                    if (Math.random() > 0.99) {
+                        malfunction.lastDirection *= -1;
+                        enemy.vx *= malfunction.lastDirection * (0.5 + Math.random());
+                    }
+                    
+                    // Jetpack sputtering effect (more frequent)
+                    enemy.jetpackSputtering = Math.random() > 0.6;
+                    
+                    // Sometimes zombies just stop working entirely for a moment
+                    if (Math.random() > 0.998) {
+                        enemy.vx = -0.5; // Still drift left slightly (game flow)
+                        enemy.vy = 0;
+                        malfunction.panicMode = false;
+                    }
+                    
+                    // Gradual drift back towards center height (jetpack trying to stabilize badly)
+                    const centerY = canvas.height / 2;
+                    const distanceFromCenter = enemy.y - centerY;
+                    if (Math.abs(distanceFromCenter) > 150) {
+                        enemy.vy += distanceFromCenter > 0 ? -0.5 : 0.5;
+                    }
+                    break;
+            }
+            
+            // Keep enemies on screen vertically (except zombie jetpacks can go wild)
+            if (enemy.ai !== 'zombie_jetpack') {
+                if (enemy.y < 50) enemy.vy = Math.abs(enemy.vy);
+                if (enemy.y > canvas.height - 150) enemy.vy = -Math.abs(enemy.vy);
+            } else {
+                // Zombie jetpacks can crash into boundaries
+                if (enemy.y < 20) {
+                    enemy.vy = Math.abs(enemy.vy) * 2; // Bounce harder
+                    enemy.jetpackMalfunction.panicMode = true;
+                }
+                if (enemy.y > canvas.height - 120) {
+                    enemy.vy = -Math.abs(enemy.vy) * 2; // Bounce harder
+                    enemy.jetpackMalfunction.panicMode = true;
+                }
+            }
+        }
+
+        // Astronaut AI assistance
+        function updateAstronautAI() {
+            if (!gameState.player.aiAssist) return;
+            
+            const player = gameState.player;
+            const nearbyEnemies = gameState.enemies.filter(enemy => {
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                return Math.sqrt(dx * dx + dy * dy) < 150;
+            });
+
+            // AI Dodge System
+            gameState.player.aiDodgeActive = false;
+            for (const enemy of nearbyEnemies) {
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Predict collision
+                const timeToCollision = Math.abs(dx) / (enemy.speed + 2);
+                if (distance < 80 && dx > 0 && dx < 100) {
+                    gameState.player.aiDodgeActive = true;
+                    
+                    // Auto-dodge logic
+                    if (player.onGround && player.jetpackLevel > 0 && player.jetpackFuel > 20) {
+                        // AI suggests jump to avoid ground enemy
+                        gameState.keys.w = true;
+                    } else if (!player.onGround && enemy.y < player.y) {
+                        // AI suggests gravity boots to avoid aerial enemy
+                        gameState.keys.s = true;
+                    }
+                }
+            }
+
+            // AI Targeting System
+            gameState.player.aiTargeting = false;
+            const targetEnemy = nearbyEnemies.find(enemy => {
+                const dx = enemy.x - player.x;
+                const dy = enemy.y - player.y;
+                return dx > 0 && dx < 100 && Math.abs(dy) < 50;
+            });
+            
+            if (targetEnemy && !player.onGround) {
+                gameState.player.aiTargeting = true;
+                const dx = targetEnemy.x - player.x;
+                const dy = targetEnemy.y - player.y;
+                
+                // AI suggests optimal attack timing
+                if (dy > 50 && player.vy > 0) {
+                    // Suggest gravity boots for ground pound
+                    gameState.keys.s = true;
+                }
+            }
+
+            // AI Jetpack Optimization & Sky Coin Collection
+            gameState.player.aiSkyCoinAssist = false;
+            if (player.jetpackLevel > 0) {
+                // Check for nearby sky coins
+                const nearbySkyCoins = gameState.coinPickups.filter(coin => {
+                    const dx = coin.x - player.x;
+                    const dy = coin.y - player.y;
+                    return coin.type === 'sky' && Math.sqrt(dx * dx + dy * dy) < 120;
+                });
+                
+                if (nearbySkyCoins.length > 0 && player.jetpackFuel > 40) {
+                    // AI suggests jetpack use for sky coin collection
+                    const targetCoin = nearbySkyCoins[0];
+                    if (targetCoin.y < player.y - 30 && !player.onGround) {
+                        gameState.keys.w = true; // Suggest jetpack to reach sky coin
+                        gameState.player.aiSkyCoinAssist = true;
+                    }
+                } else if (player.jetpackFuel < 30 && nearbyEnemies.length > 0) {
+                    // AI conserves fuel when enemies are near
+                    gameState.keys.w = false;
+                }
+            }
+        }
+        // Enemy and pickup spawning
+        function spawnEnemy() {
+            const currentLevel = LEVELS[gameState.currentLevel - 1];
+            if (!currentLevel || gameState.levelComplete || gameState.gameMode !== 'campaign') return;
+            
+            if (gameState.gameTime - gameState.lastEnemySpawn > currentLevel.enemySpawnRate) {
+                let enemyPool = [...ENEMY_TYPES];
+                
+                // Increase zombie jetpack spawns based on level
+                if (gameState.currentLevel >= 2) {
+                    // Add zombie jetpacks starting level 2
+                    enemyPool = [...enemyPool, ...ENEMY_TYPES.slice(4)]; // Add zombie variants
+                }
+                if (gameState.currentLevel >= 4) {
+                    // More zombie jetpacks at level 4+
+                    enemyPool = [...enemyPool, ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4)];
+                }
+                if (gameState.currentLevel >= 6) {
+                    // Sky becomes zombie-infested at level 6+
+                    enemyPool = [...enemyPool, ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4)];
+                }
+                if (gameState.currentLevel >= 8) {
+                    // Zombie apocalypse in the sky at level 8+
+                    enemyPool = [...enemyPool, ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4), ...ENEMY_TYPES.slice(4)];
+                }
+                
+                const type = enemyPool[Math.floor(Math.random() * enemyPool.length)];
+                const speed = type.speed * currentLevel.speedMultiplier;
+                
+                // Zombie jetpacks spawn across the entire sky
+                let spawnY;
+                if (type.flying) {
+                    if (type.zombie) {
+                        // Zombie jetpacks can spawn anywhere in the sky - they're lost!
+                        spawnY = 30 + Math.random() * (canvas.height - 200);
+                    } else {
+                        // Regular flying enemies in standard zone
+                        spawnY = 150 + Math.random() * 250;
+                    }
+                } else {
+                    spawnY = canvas.height - 100 - type.height;
+                }
+                
+                const newEnemy = {
+                    x: gameState.camera.x + canvas.width + Math.random() * 200,
+                    y: spawnY,
+                    width: type.width, height: type.height,
+                    speed, color: type.color, points: type.points, coins: type.coins,
+                    flying: type.flying || false,
+                    zombie: type.zombie || false,
+                    vx: -speed, vy: type.flying ? Math.sin(gameState.gameTime * 0.002) : 0,
+                    ai: type.ai, // AI behavior type
+                    aiState: 'normal', // Current AI state
+                    jetpackSputtering: false
+                };
+                
+                // Zombie jetpacks start with random velocity chaos
+                if (type.zombie && type.flying) {
+                    newEnemy.vx = -speed * (0.5 + Math.random() * 0.8);
+                    newEnemy.vy = (Math.random() - 0.5) * 4;
+                }
+                
+                gameState.enemies.push(newEnemy);
+                gameState.lastEnemySpawn = gameState.gameTime;
+            }
+        }
+
+        function spawnFuelPickup() {
+            if (gameState.gameMode === 'menu') return;
+            
+            if (gameState.gameTime - gameState.lastFuelSpawn > 3000 + Math.random() * 4000) {
+                gameState.fuelPickups.push({
+                    x: gameState.camera.x + canvas.width + Math.random() * 200,
+                    y: 50 + Math.random() * 350,
+                    width: 16, height: 16, fuelAmount: 20
+                });
+                gameState.lastFuelSpawn = gameState.gameTime;
+            }
+        }
+
+        function spawnCoinPickup() {
+            if (gameState.gameMode === 'menu') return;
+            
+            // Sky coins - high-value coins that spawn in the upper atmosphere
+            if (gameState.gameTime - gameState.lastCoinSpawn > 5000 + Math.random() * 7000) {
+                const skyHeight = 50 + Math.random() * 200; // High in the sky
+                const coinValue = 15 + Math.floor(Math.random() * 10); // Higher value for sky coins
+                
+                gameState.coinPickups.push({
+                    x: gameState.camera.x + canvas.width + Math.random() * 300,
+                    y: skyHeight,
+                    width: 16, height: 16,
+                    value: coinValue,
+                    type: 'sky',
+                    sparkle: Math.random() * Math.PI * 2,
+                    floating: true
+                });
+                gameState.lastCoinSpawn = gameState.gameTime;
+                console.log("Sky coin spawned! Value:", coinValue);
+            }
+        }
+
+        // Collision detection
+        function checkCollisions() {
+            if (gameState.gameMode === 'menu') return;
+            
+            const player = gameState.player;
+            
+            // Player vs Enemy collisions
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                const enemy = gameState.enemies[i];
+                if (player.x < enemy.x + enemy.width && player.x + player.width > enemy.x &&
+                    player.y < enemy.y + enemy.height && player.y + player.height > enemy.y) {
+                    
+                    // Check if this is an aerial kill (player not on ground)
+                    if (!player.onGround) {
+                        // AERIAL KILL - Reward coins and bonus points!
+                        const airKillMultiplier = player.hasExoskeleton ? 3 : 2;
+                        const flyingBonus = enemy.flying ? 2 : 1; // Extra bonus for flying enemies
+                        
+                        gameState.score += enemy.points * airKillMultiplier;
+                        gameState.lunarCoins += enemy.coins * airKillMultiplier * flyingBonus;
+                        
+                        // Less damage when actively killing enemies
+                        let damage = 10; // Reduced from 20
+                        if (player.hasExoskeleton) {
+                            damage = Math.floor(damage * 0.5);
+                            if (player.exoskeletonShieldRecharge <= 0) {
+                                damage = Math.floor(damage * 0.5);
+                                player.exoskeletonShieldRecharge = 60;
+                            }
+                        }
+                        
+                        player.health -= damage;
+                        gameState.enemies.splice(i, 1);
+                        
+                        // Screen shake for aerial kills
+                        gameState.screenShake = { active: true, intensity: 5, duration: 8 };
+                        
+                        console.log("Aerial kill! Coins earned:", enemy.coins * airKillMultiplier * flyingBonus);
+                    } else {
+                        // GROUND COLLISION - Just damage, no rewards
+                        let damage = 20;
+                        if (player.hasExoskeleton) {
+                            damage = Math.floor(damage * 0.5);
+                            if (player.exoskeletonShieldRecharge <= 0) {
+                                damage = Math.floor(damage * 0.5);
+                                player.exoskeletonShieldRecharge = 60;
+                            }
+                        }
+                        
+                        player.health -= damage;
+                        gameState.enemies.splice(i, 1);
+                        console.log("Ground collision - no coins earned");
+                    }
+                    
+                    if (player.health <= 0) {
+                        restartLevel();
+                        return;
+                    }
+                }
+            }
+            
+            // Player vs Fuel Pickup collisions
+            for (let i = gameState.fuelPickups.length - 1; i >= 0; i--) {
+                const fuel = gameState.fuelPickups[i];
+                if (player.x < fuel.x + fuel.width && player.x + player.width > fuel.x &&
+                    player.y < fuel.y + fuel.height && player.y + player.height > fuel.y) {
+                    
+                    if (player.jetpackLevel > 0) {
+                        player.jetpackFuel = Math.min(player.maxJetpackFuel, player.jetpackFuel + fuel.fuelAmount);
+                        gameState.score += 50;
+                    } else {
+                        // No coin conversion - just score
+                        gameState.score += 25;
+                    }
+                    gameState.fuelPickups.splice(i, 1);
+                }
+            }
+            
+            // Player vs Coin Pickup collisions (Sky Coins)
+            for (let i = gameState.coinPickups.length - 1; i >= 0; i--) {
+                const coin = gameState.coinPickups[i];
+                if (player.x < coin.x + coin.width && player.x + player.width > coin.x &&
+                    player.y < coin.y + coin.height && player.y + player.height > coin.y) {
+                    
+                    // Sky coin bonus - only collectible while airborne!
+                    if (!player.onGround) {
+                        const skyBonus = player.usingJetpack ? 1.5 : 1.2; // Extra bonus for jetpack collection
+                        const finalValue = Math.floor(coin.value * skyBonus);
+                        
+                        gameState.lunarCoins += finalValue;
+                        gameState.score += finalValue * 15; // Higher score multiplier
+                        
+                        // Visual feedback for sky coin collection
+                        gameState.screenShake = { active: true, intensity: 3, duration: 5 };
+                        
+                        console.log("Sky coin collected! Value:", finalValue, "Jetpack bonus:", player.usingJetpack);
+                    } else {
+                        // Can't collect sky coins while on ground - skill required!
+                        console.log("Sky coin missed - must be airborne to collect!");
+                        continue;
+                    }
+                    
+                    gameState.coinPickups.splice(i, 1);
+                }
+            }
+        }
+
+        // Level management
+        function updateLevel() {
+            const currentLevel = LEVELS[gameState.currentLevel - 1];
+            if (!currentLevel || gameState.levelComplete) return;
+            
+            gameState.levelProgress = Math.floor(gameState.gameTime / 1000);
+            
+            if (gameState.levelProgress >= currentLevel.duration) {
+                gameState.levelComplete = true;
+                
+                if (gameState.currentLevel >= 10) {
+                    gameState.gameComplete = true;
+                } else {
+                    setTimeout(() => nextLevel(), 2000);
+                }
+            }
+        }
+
+        function nextLevel() {
+            if (gameState.currentLevel < 10) {
+                gameState.currentLevel++;
+                gameState.levelComplete = false;
+                gameState.gameTime = 0;
+                gameState.gameStartTime = Date.now();
+                gameState.levelProgress = 0;
+                gameState.lastEnemySpawn = 0;
+                gameState.lastFuelSpawn = 0;
+                gameState.lastCoinSpawn = 0;
+                
+                const levelBonus = 1000 * (gameState.currentLevel - 1);
+                const coinBonus = 25 + (gameState.currentLevel - 1) * 5;
+                gameState.score += levelBonus;
+                gameState.lunarCoins += coinBonus;
+                
+                gameState.enemies = [];
+                gameState.fuelPickups = [];
+                gameState.coinPickups = []; // Sky coins for aerial skill challenges
+                
+                gameState.player.health = Math.min(gameState.player.maxHealth, gameState.player.health + 25);
+                if (gameState.player.jetpackLevel > 0) {
+                    gameState.player.jetpackFuel = gameState.player.maxJetpackFuel;
+                }
+            }
+        }
+
+        // Game object updates
+        function updateGameObjects() {
+            updateLevel();
+            gameState.score += 1;
+            
+            // Update screen shake
+            if (gameState.screenShake.active) {
+                gameState.screenShake.duration--;
+                if (gameState.screenShake.duration <= 0) {
+                    gameState.screenShake.active = false;
+                    gameState.screenShake.intensity = 0;
+                }
+            }
+            
+            // Update enemies with AI
+            for (let i = gameState.enemies.length - 1; i >= 0; i--) {
+                const enemy = gameState.enemies[i];
+                
+                // Apply AI behavior
+                updateEnemyAI(enemy);
+                
+                // Update position
+                enemy.x += enemy.vx;
+                enemy.y += enemy.vy;
+                
+                // Keep flying enemies in bounds
+                if (enemy.flying) {
+                    if (enemy.y < 50) enemy.y = 50;
+                    if (enemy.y > canvas.height - 150) enemy.y = canvas.height - 150;
+                }
+                
+                if (enemy.x + enemy.width < gameState.camera.x - 100) {
+                    // Enemies that escape give score but NO COINS - must kill them skillfully!
+                    gameState.score += enemy.points;
+                    gameState.enemies.splice(i, 1);
+                }
+            }
+            
+            // Clean up off-screen pickups
+            gameState.fuelPickups = gameState.fuelPickups.filter(fuel => fuel.x + 16 >= gameState.camera.x - 100);
+            gameState.coinPickups = gameState.coinPickups.filter(coin => coin.x + 16 >= gameState.camera.x - 100);
+        }
+
+        // UI Updates
+        function updateUI() {
+            if (gameState.gameMode === 'menu') {
+                document.getElementById('totalCoins').textContent = gameState.totalCoins;
+                return;
+            }
+            
+            const currentLevel = LEVELS[gameState.currentLevel - 1];
+            document.getElementById('health').textContent = Math.max(0, Math.floor(gameState.player.health));
+            
+            // Update fuel display based on jetpack ownership
+            const fuelDisplay = document.getElementById('fuelDisplay');
+            if (gameState.player.jetpackLevel > 0) {
+                fuelDisplay.innerHTML = `Jetpack Fuel: ${Math.floor(gameState.player.jetpackFuel)}`;
+            } else {
+                fuelDisplay.innerHTML = `<span style="color: #888;">🚀 No Jetpack - Visit Shop</span>`;
+            }
+            
+            document.getElementById('score').textContent = gameState.score;
+            document.getElementById('lunarCoins').textContent = gameState.lunarCoins;
+            document.getElementById('level').textContent = gameState.currentLevel;
+            document.getElementById('levelName').textContent = currentLevel ? currentLevel.name : "Unknown";
+            document.getElementById('levelProgress').textContent = gameState.levelProgress;
+            document.getElementById('levelDuration').textContent = currentLevel ? currentLevel.duration : "??";
+            
+            // Update exoskeleton status display
+            const exoskeletonStatus = document.getElementById('exoskeletonStatus');
+            if (gameState.player.hasExoskeleton) {
+                exoskeletonStatus.style.display = 'block';
+                if (gameState.player.exoskeletonShieldRecharge > 0) {
+                    exoskeletonStatus.style.color = '#00FF00';
+                    exoskeletonStatus.textContent = '🛡️ EXOSKELETON SHIELDING';
+                } else {
+                    exoskeletonStatus.style.color = '#FF6B6B';
+                    exoskeletonStatus.textContent = '🛡️ EXOSKELETON ACTIVE';
+                }
+            } else {
+                exoskeletonStatus.style.display = 'none';
+            }
+
+            // Update AI assist status display
+            const aiAssistStatus = document.getElementById('aiAssistStatus');
+            if (gameState.player.aiAssist) {
+                aiAssistStatus.style.display = 'block';
+                if (gameState.player.aiDodgeActive) {
+                    aiAssistStatus.style.color = '#FFFF00';
+                    aiAssistStatus.textContent = '🤖 AI DODGE ACTIVE';
+                } else if (gameState.player.aiTargeting) {
+                    aiAssistStatus.style.color = '#FF8800';
+                    aiAssistStatus.textContent = '🤖 AI TARGETING';
+                } else if (gameState.player.aiSkyCoinAssist) {
+                    aiAssistStatus.style.color = '#FFD700';
+                    aiAssistStatus.textContent = '🤖 AI SKY COIN ASSIST';
+                } else {
+                    aiAssistStatus.style.color = '#00FFFF';
+                    aiAssistStatus.textContent = '🤖 AI CO-PILOT ACTIVE';
+                }
+            } else {
+                aiAssistStatus.style.display = 'none';
+            }
+        }
+
+        // Rendering
+        function render() {
+            ctx.fillStyle = '#001122';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            if (gameState.gameMode === 'menu') return;
+            
+            ctx.save();
+            
+            // Apply screen shake
+            let shakeX = 0, shakeY = 0;
+            if (gameState.screenShake.active) {
+                shakeX = (Math.random() - 0.5) * gameState.screenShake.intensity;
+                shakeY = (Math.random() - 0.5) * gameState.screenShake.intensity;
+            }
+            
+            ctx.translate(-gameState.camera.x + shakeX, shakeY);
+            
+            // Draw ground
+            ctx.fillStyle = '#444';
+            ctx.fillRect(gameState.camera.x - 500, canvas.height - 100, canvas.width + 1000, 100);
+            
+            // Draw background stars
+            ctx.fillStyle = '#FFF';
+            for (let i = 0; i < 50; i++) {
+                ctx.fillRect(gameState.camera.x + (i * 50) % canvas.width, (i * 23) % 300, 2, 2);
+            }
+            
+            // Draw fuel pickups
+            ctx.fillStyle = '#FF8800';
+            gameState.fuelPickups.forEach(fuel => {
+                ctx.fillRect(fuel.x, fuel.y, fuel.width, fuel.height);
+            });
+            
+            // Update and draw sky coin pickups with special effects
+            gameState.coinPickups.forEach(coin => {
+                if (coin.type === 'sky') {
+                    // Animated floating effect - update the floating offset
+                    coin.sparkle += 0.05;
+                    const floatOffset = Math.sin(gameState.gameTime * 0.005 + coin.sparkle) * 2;
+                    const drawY = coin.y + floatOffset;
+                    
+                    // Glowing sky coin effect
+                    ctx.fillStyle = 'rgba(255, 215, 0, 0.6)';
+                    ctx.fillRect(coin.x - 3, drawY - 3, coin.width + 6, coin.height + 6);
+                    
+                    // Main coin body
+                    ctx.fillStyle = '#FFD700';
+                    ctx.fillRect(coin.x, drawY, coin.width, coin.height);
+                    
+                    // Sparkle effect
+                    ctx.fillStyle = '#FFF';
+                    const sparkleX = coin.x + 2 + Math.sin(coin.sparkle * 2) * 1;
+                    const sparkleY = drawY + 2 + Math.cos(coin.sparkle * 2) * 1;
+                    ctx.fillRect(sparkleX, sparkleY, 2, 2);
+                    ctx.fillRect(coin.x + coin.width - 4, drawY + coin.height - 4, 2, 2);
+                    
+                    // Sky coin symbol
+                    ctx.fillStyle = '#000';
+                    ctx.font = '10px monospace';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('☆', coin.x + coin.width/2, drawY + coin.height/2 + 3);
+                    
+                    // Value indicator that pulses
+                    ctx.fillStyle = `rgba(255, 255, 255, ${0.7 + Math.sin(coin.sparkle * 3) * 0.3})`;
+                    ctx.font = '6px monospace';
+                    ctx.fillText(coin.value, coin.x + coin.width/2, drawY - 5);
+                }
+            });
+            
+            // Draw enemies with AI indicators and zombie jetpack effects
+            gameState.enemies.forEach(enemy => {
+                // Main enemy body
+                ctx.fillStyle = enemy.color;
+                ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+                
+                // Zombie jetpack special effects
+                if (enemy.zombie && enemy.flying) {
+                    // Draw malfunctioning jetpack trail
+                    let trailColors = ['#FF4444', '#FF8800', '#FFFF00'];
+                    if (enemy.jetpackMalfunction && enemy.jetpackMalfunction.panicMode) {
+                        // More chaotic colors during panic
+                        trailColors = ['#FF0000', '#FF4444', '#FF8800', '#FFFF00', '#FF00FF'];
+                    }
+                    const trailColor = trailColors[Math.floor(Math.random() * trailColors.length)];
+                    
+                    if (enemy.jetpackSputtering || Math.random() > 0.5) {
+                        // Multiple erratic jetpack flames during panic
+                        const flameCount = enemy.jetpackMalfunction && enemy.jetpackMalfunction.panicMode ? 3 : 1;
+                        
+                        for (let f = 0; f < flameCount; f++) {
+                            ctx.fillStyle = trailColor;
+                            const flameSize = 3 + Math.random() * 10;
+                            const flameLength = 6 + Math.random() * 15;
+                            const flameOffset = (Math.random() - 0.5) * 12;
+                            const flameYOffset = f * 4;
+                            ctx.fillRect(
+                                enemy.x - 8 + flameOffset, 
+                                enemy.y + enemy.height - 2 + flameYOffset, 
+                                flameSize, 
+                                flameLength
+                            );
+                        }
+                        
+                        // More spark effects during panic
+                        if (Math.random() > 0.4) {
+                            ctx.fillStyle = '#FFF';
+                            const sparkCount = enemy.jetpackMalfunction && enemy.jetpackMalfunction.panicMode ? 6 : 3;
+                            for (let i = 0; i < sparkCount; i++) {
+                                const sparkX = enemy.x - 15 + Math.random() * 25;
+                                const sparkY = enemy.y + enemy.height + Math.random() * 20;
+                                ctx.fillRect(sparkX, sparkY, 1, 1);
+                            }
+                        }
+                    }
+                    
+                    // Draw zombie characteristics
+                    ctx.fillStyle = '#800080'; // Purple zombie tint
+                    ctx.fillRect(enemy.x + 2, enemy.y + 2, enemy.width - 4, enemy.height - 4);
+                    
+                    // Glowing zombie eyes
+                    ctx.fillStyle = '#FF0000';
+                    ctx.fillRect(enemy.x + 8, enemy.y + 8, 3, 3);
+                    ctx.fillRect(enemy.x + enemy.width - 11, enemy.y + 8, 3, 3);
+                    
+                    // Jetpack backpack (sparking when malfunctioning)
+                    ctx.fillStyle = enemy.jetpackSputtering ? '#FF8800' : '#666';
+                    ctx.fillRect(enemy.x + enemy.width - 8, enemy.y + 10, 6, enemy.height - 20);
+                    
+                    // Warning symbol for chaotic behavior
+                    if (enemy.jetpackMalfunction && enemy.jetpackMalfunction.panicMode) {
+                        ctx.fillStyle = '#FFFF00';
+                        ctx.font = '10px monospace';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('!', enemy.x + enemy.width/2, enemy.y - 5);
+                    }
+                }
+                
+                // AI behavior indicators
+                ctx.fillStyle = '#FFF';
+                ctx.font = '8px monospace';
+                ctx.textAlign = 'center';
+                
+                switch(enemy.ai) {
+                    case 'aggressive':
+                        ctx.fillStyle = '#FF0000';
+                        ctx.fillRect(enemy.x + enemy.width - 8, enemy.y, 6, 6);
+                        break;
+                    case 'evasive':
+                        ctx.fillStyle = '#00FFFF';
+                        ctx.fillRect(enemy.x + enemy.width - 8, enemy.y, 6, 6);
+                        break;
+                    case 'hunter':
+                        ctx.fillStyle = '#FFD700';
+                        ctx.fillRect(enemy.x + enemy.width - 8, enemy.y, 6, 6);
+                        break;
+                    case 'tank':
+                        ctx.fillStyle = '#888';
+                        ctx.fillRect(enemy.x + enemy.width - 8, enemy.y, 6, 6);
+                        break;
+                    case 'zombie_jetpack':
+                        // Pulsing zombie indicator
+                        const pulseIntensity = 0.5 + Math.sin(gameState.gameTime * 0.01) * 0.5;
+                        ctx.fillStyle = `rgba(128, 0, 128, ${pulseIntensity})`;
+                        ctx.fillRect(enemy.x + enemy.width - 10, enemy.y - 2, 8, 8);
+                        ctx.fillStyle = '#FFF';
+                        ctx.font = '6px monospace';
+                        ctx.fillText('Z', enemy.x + enemy.width - 6, enemy.y + 4);
+                        break;
+                }
+            });
+            
+            // Draw player with exoskeleton enhancements
+            const player = gameState.player;
+            
+            // Base player color
+            let playerColor = player.hyperGravityActive ? '#00AAFF' : '#00DDFF';
+            if (player.hasExoskeleton) {
+                playerColor = player.hyperGravityActive ? '#FF4444' : '#FF6B6B';
+                
+                // Exoskeleton outer frame
+                ctx.fillStyle = '#888';
+                const frameThickness = 2;
+                ctx.fillRect(player.x - frameThickness, player.y - frameThickness, 
+                           player.width + frameThickness * 2, player.height + frameThickness * 2);
+                
+                // Shield effect when active
+                if (player.exoskeletonShieldRecharge > 0) {
+                    ctx.fillStyle = 'rgba(0, 255, 0, 0.3)';
+                    ctx.fillRect(player.x - 4, player.y - 4, player.width + 8, player.height + 8);
+                }
+            }
+            
+            ctx.fillStyle = playerColor;
+            const playerHeight = player.hyperGravityActive ? player.height * 0.6 : player.height;
+            const playerY = player.hyperGravityActive ? player.y + player.height * 0.4 : player.y;
+            ctx.fillRect(player.x, playerY, player.width, playerHeight);
+            
+            // Exoskeleton details
+            if (player.hasExoskeleton) {
+                // Helmet visor
+                ctx.fillStyle = '#00FFFF';
+                ctx.fillRect(player.x + 5, player.y + 3, player.width - 10, 8);
+                
+                // Chest panel
+                ctx.fillStyle = '#FFD700';
+                ctx.fillRect(player.x + 10, player.y + 15, player.width - 20, 10);
+                
+                // Power lines
+                ctx.fillStyle = '#00FF00';
+                ctx.fillRect(player.x + 3, player.y + 13, 2, player.height - 15);
+                ctx.fillRect(player.x + player.width - 5, player.y + 13, 2, player.height - 15);
+            }
+            
+            // Draw jetpack trail (enhanced for exoskeleton)
+            if (player.usingJetpack && player.jetpackFuel > 0 && player.jetpackLevel > 0) {
+                const trailColor = player.hasExoskeleton ? '#00FFFF' : '#FF8800';
+                const trailSize = player.hasExoskeleton ? 12 : 8;
+                const trailLength = player.hasExoskeleton ? 15 : 10;
+                
+                ctx.fillStyle = trailColor;
+                ctx.fillRect(player.x - 10, player.y + player.height - 5, trailSize, trailLength);
+                
+                if (player.hasExoskeleton) {
+                    // Additional trail effects for exoskeleton
+                    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+                    ctx.fillRect(player.x - 8, player.y + player.height - 3, 7, 10);
+                }
+            }
+            
+            // Draw AI assistance indicators
+            if (gameState.player.aiAssist) {
+                // Draw AI targeting reticle
+                if (gameState.player.aiTargeting) {
+                    ctx.strokeStyle = '#FFFF00';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(player.x + player.width/2, player.y + player.height/2, 30, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                
+                // Draw AI dodge warning
+                if (gameState.player.aiDodgeActive) {
+                    ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+                    ctx.fillRect(player.x - 20, player.y - 20, player.width + 40, player.height + 40);
+                }
+                
+                // Draw sky coin collection indicator
+                if (gameState.player.aiSkyCoinAssist) {
+                    gameState.coinPickups.forEach(coin => {
+                        if (coin.type === 'sky') {
+                            const dx = coin.x - player.x;
+                            const dy = coin.y - player.y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 120) {
+                                // Draw line to suggested sky coin
+                                ctx.strokeStyle = '#FFD700';
+                                ctx.lineWidth = 1;
+                                ctx.setLineDash([5, 5]);
+                                ctx.beginPath();
+                                ctx.moveTo(player.x + player.width/2, player.y + player.height/2);
+                                ctx.lineTo(coin.x + coin.width/2, coin.y + coin.height/2);
+                                ctx.stroke();
+                                ctx.setLineDash([]);
+                            }
+                        }
+                    });
+                }
+            }
+            
+            ctx.restore();
+            
+            // Draw overlays
+            if (gameState.levelComplete && !gameState.gameComplete) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#00FF00';
+                ctx.font = '48px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('LEVEL COMPLETE!', canvas.width/2, canvas.height/2 - 50);
+                ctx.font = '24px monospace';
+                ctx.fillText(`Advancing to Level ${gameState.currentLevel + 1}...`, canvas.width/2, canvas.height/2 + 20);
+            }
+            
+            if (gameState.gameComplete) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#FFD700';
+                ctx.font = '64px monospace';
+                ctx.textAlign = 'center';
+                ctx.fillText('MISSION COMPLETE!', canvas.width/2, canvas.height/2 - 100);
+                ctx.font = '32px monospace';
+                ctx.fillText('You survived the Lunar Outbreak!', canvas.width/2, canvas.height/2 - 40);
+                ctx.font = '24px monospace';
+                ctx.fillText(`Final Score: ${gameState.score}`, canvas.width/2, canvas.height/2 + 20);
+                ctx.fillText('Press Back to Menu to continue', canvas.width/2, canvas.height/2 + 60);
+            }
+        }
+
+        // Input handling
+        document.addEventListener('keydown', (e) => {
+            gameState.keys[e.key.toLowerCase()] = true;
+            gameState.keys[e.code.toLowerCase()] = true;
+            
+            if (e.key === '1' && gameState.gameMode === 'menu') startGame();
+            if (e.key === '0') backToMenu();
+            if (e.key.toLowerCase() === 'r') restartLevel();
+            
+            console.log("Key pressed:", e.key, "Game mode:", gameState.gameMode);
+        });
+
+        document.addEventListener('keyup', (e) => {
+            gameState.keys[e.key.toLowerCase()] = false;
+            gameState.keys[e.code.toLowerCase()] = false;
+        });
+
+        // Mobile Touch Controls
+        let touchState = {
+            jump: false,
+            gravity: false
+        };
+
+        function initializeTouchControls() {
+            const jumpBtn = document.getElementById('jumpBtn');
+            const gravityBtn = document.getElementById('gravityBtn');
+            const restartBtn = document.getElementById('restartBtn');
+            const menuBtn = document.getElementById('menuBtn');
+
+            // Jump button (supports both tap and hold)
+            jumpBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.jump = true;
+                gameState.keys.w = true;
+                gameState.keys[' '] = true;
+                jumpBtn.style.transform = 'scale(0.9)';
+                jumpBtn.style.background = 'rgba(76, 175, 80, 0.8)';
+            });
+
+            jumpBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.jump = false;
+                gameState.keys.w = false;
+                gameState.keys[' '] = false;
+                jumpBtn.style.transform = 'scale(1)';
+                jumpBtn.style.background = 'rgba(76, 175, 80, 0.3)';
+            });
+
+            // Gravity boots button (hold to activate)
+            gravityBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState.gravity = true;
+                gameState.keys.s = true;
+                gravityBtn.style.transform = 'scale(0.9)';
+                gravityBtn.style.background = 'rgba(255, 107, 107, 0.8)';
+            });
+
+            gravityBtn.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState.gravity = false;
+                gameState.keys.s = false;
+                gravityBtn.style.transform = 'scale(1)';
+                gravityBtn.style.background = 'rgba(255, 107, 107, 0.3)';
+            });
+
+            // Restart button
+            restartBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                restartLevel();
+                restartBtn.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    restartBtn.style.transform = 'scale(1)';
+                }, 100);
+            });
+
+            // Menu button
+            menuBtn.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                if (gameState.gameMode === 'campaign') {
+                    backToMenu();
+                }
+                menuBtn.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    menuBtn.style.transform = 'scale(1)';
+                }, 100);
+            });
+
+            // Prevent context menu on long press
+            [jumpBtn, gravityBtn, restartBtn, menuBtn].forEach(btn => {
+                btn.addEventListener('contextmenu', (e) => e.preventDefault());
+                btn.addEventListener('touchcancel', (e) => {
+                    e.preventDefault();
+                    // Reset all touch states
+                    touchState.jump = false;
+                    touchState.gravity = false;
+                    gameState.keys.w = false;
+                    gameState.keys[' '] = false;
+                    gameState.keys.s = false;
+                    
+                    // Reset button visual states
+                    jumpBtn.style.transform = 'scale(1)';
+                    jumpBtn.style.background = 'rgba(76, 175, 80, 0.3)';
+                    gravityBtn.style.transform = 'scale(1)';
+                    gravityBtn.style.background = 'rgba(255, 107, 107, 0.3)';
+                    restartBtn.style.transform = 'scale(1)';
+                    menuBtn.style.transform = 'scale(1)';
+                });
+            });
+        }
+
+        // Alternative gesture controls (swipe and tap)
+        let gestureState = {
+            startY: 0,
+            startX: 0,
+            isGesturing: false
+        };
+
+        canvas.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            if (gameState.gameMode === 'menu') return;
+            
+            const touch = e.touches[0];
+            gestureState.startY = touch.clientY;
+            gestureState.startX = touch.clientX;
+            gestureState.isGesturing = true;
+        });
+
+        canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+        });
+
+        canvas.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            if (gameState.gameMode === 'menu' || !gestureState.isGesturing) return;
+            
+            const touch = e.changedTouches[0];
+            const deltaY = gestureState.startY - touch.clientY;
+            const deltaX = Math.abs(gestureState.startX - touch.clientX);
+            
+            // Swipe up for jump (if vertical movement > 50px and not too much horizontal)
+            if (deltaY > 50 && deltaX < 100) {
+                gameState.keys.w = true;
+                setTimeout(() => {
+                    gameState.keys.w = false;
+                }, 200);
+            }
+            // Swipe down for gravity boots
+            else if (deltaY < -50 && deltaX < 100) {
+                gameState.keys.s = true;
+                setTimeout(() => {
+                    gameState.keys.s = false;
+                }, 500);
+            }
+            // Tap for quick jump
+            else if (Math.abs(deltaY) < 30 && deltaX < 30) {
+                gameState.keys.w = true;
+                setTimeout(() => {
+                    gameState.keys.w = false;
+                }, 150);
+            }
+            
+            gestureState.isGesturing = false;
+        });
+
+        // Prevent default touch behaviors
+        document.addEventListener('touchstart', (e) => {
+            if (e.target.closest('#touchControls') || e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        document.addEventListener('touchmove', (e) => {
+            if (e.target.closest('#touchControls') || e.target === canvas) {
+                e.preventDefault();
+            }
+        }, { passive: false });
+
+        // Initialize touch controls when page loads
+        document.addEventListener('DOMContentLoaded', initializeTouchControls);
+        
+        // Also initialize immediately in case DOM is already loaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeTouchControls);
+        } else {
+            initializeTouchControls();
+        }
+
+        // Main game loop
+        function gameLoop() {
+            if (gameState.gameMode !== 'menu') {
+                if (gameState.gameStartTime === 0) {
+                    gameState.gameStartTime = Date.now();
+                }
+                gameState.gameTime = Date.now() - gameState.gameStartTime;
+                
+                updatePlayer();
+                spawnEnemy();
+                spawnFuelPickup();
+                spawnCoinPickup(); // Sky coins for aerial skill challenges
+                updateGameObjects();
+                checkCollisions();
+            }
+            
+            render();
+            updateUI();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Initialize and start
+        console.log("Starting game loop...");
+        updateTouchControlsVisibility();
+        updateUI();
+        gameLoop();
+        console.log("Game fully initialized!");
+    </script>
+</body>
+</html>
